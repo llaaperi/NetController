@@ -26,7 +26,7 @@ HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
 OBJECTS = NetController.o arp.o ds1820.o enc28j60.o eth.o http.o icmp.o ip.o keypad.o lcd.o relay.o tcp.o twi.o 
 COBJECTS = $(addprefix $(OBJDIR)/, $(OBJECTS))
-TARGETS = NetController.elf NetController.hex NetController.eep NetController.lss
+TARGETS = $(PROJECT).elf $(PROJECT).hex $(PROJECT).eep $(PROJECT).lss
 CTARGETS = $(addprefix $(BINDIR)/, $(TARGETS))
 
 all: buildrepo $(CTARGETS) size
@@ -36,7 +36,7 @@ buildrepo:
 	@mkdir -p $(BINDIR)
 
 $(BINDIR)/%.elf: $(COBJECTS)
-	$(CC) $(LFLAGS) $(COBJECTS) -o $(BINDIR)/NetController.elf
+	$(CC) $(LFLAGS) $(COBJECTS) -o $(BINDIR)/$(PROJECT).elf
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) $< -o $@
@@ -51,12 +51,24 @@ $(BINDIR)/%.eep: $(BINDIR)/%.elf
 $(BINDIR)/%.lss: $(BINDIR)/%.elf
 	avr-objdump -h -S $< > $@
 
-size: $(BINDIR)/NetController.elf
+size: $(BINDIR)/$(PROJECT).elf
 	@echo
-	@avr-size $(BINDIR)/NetController.elf
+	@avr-size $(BINDIR)/$(PROJECT).elf
 
 clean:
 	rm -f $(COBJECTS)
 	rmdir $(OBJDIR)
 	rm -f $(CTARGETS)
 	rmdir $(BINDIR)
+	
+program:
+	avrdude -c avrispmkII -P usb -p $(MCU) -e -U flash:w:$(BINDIR)/$(PROJECT).hex
+
+programeeprom:
+	avrdude -c avrispmkII -P usb -p $(MCU) -U eeprom:w:$(BINDIR)/$(PROJECT).eep
+
+programfuses:
+	avrdude -c avrispmkII -P usb -p $(MCU) -U efuse:w:0x04:m -U hfuse:w:0xD1:m -U lfuse:w:0xE0:m
+
+info:
+	avrdude -vv -c avrispmkII -P usb -p $(MCU)
