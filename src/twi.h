@@ -13,8 +13,8 @@
 
 void twi_init();
 
-void twi_write_byte(char addr, char byte);
-char twi_read_byte(char addr, char* byte);
+void twi_write_byte(uint8_t addr, uint8_t byte);
+char twi_read_byte(uint8_t addr, uint8_t* byte);
 
 
 

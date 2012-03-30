@@ -23,22 +23,22 @@ void keypad_init(){
 
 char keypad_get_key(){
 
+    uint8_t byte = 0, tmp = 0;
 	char key = 0;
-	char tmp = 0;
-	
+    
 	_delay_ms(5);							//Short delay to prevent bouncing when key is pressed
 	
 	twi_write_byte(KEYPAD_ADDR, 0x0F);		//Write all rows high
 	twi_read_byte(KEYPAD_ADDR, &tmp);
-	key |= ~(0xF0 | tmp);					//Read column
+	byte |= ~(0xF0 | tmp);					//Read column
 	
 	twi_write_byte(KEYPAD_ADDR, 0xF0);		//Write all columns high
 	twi_read_byte(KEYPAD_ADDR, &tmp);
-	key |= ~(0x0F | tmp);					//Read row
+	byte |= ~(0x0F | tmp);					//Read row
 	
 	twi_write_byte(KEYPAD_ADDR, 0x0F);		//Return to original state
 	
-	switch(key){							//Map key value to button
+	switch(byte){							//Map key value to button
 		case 0x88: key = '1'; break;
 		case 0x84: key = '4'; break;
 		case 0x82: key = '7'; break;

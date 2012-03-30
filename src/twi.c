@@ -14,7 +14,7 @@ void twi_init(){
 	TWBR = 55;		//F_CPU 12500000
 }
 
-void twi_write_byte(char addr, char byte){
+void twi_write_byte(uint8_t addr, uint8_t byte){
 	
 	TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);		//START
 	while(!(TWCR & (1<<TWINT)));
@@ -40,7 +40,7 @@ void twi_write_byte(char addr, char byte){
 	
 }
 
-char twi_read_byte(char addr, char* byte){
+char twi_read_byte(uint8_t addr, uint8_t* byte){
 	
 	TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);		//START
 	while(!(TWCR & (1<<TWINT)));
