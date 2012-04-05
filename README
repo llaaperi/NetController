@@ -15,16 +15,22 @@ Contents:
 # 1. Introduction
 ####################################
 
-NetController is an Ethernet based control system for remote home automation purposes. It is designed for controlling any electric device such as lighting or electic heating. External servers are not required, because small Web server is implemented on the board's microcontroller.
+NetController is an Ethernet based control system for remote home automation purposes. It is designed for controlling 
+any electric device such as lighting or electic heating. External servers are not required, because small Web server 
+is implemented on the board's microcontroller.
 
-Device uses Atmel AVR Atmega328p microcontroller for the main operations and Microchip ENC28J60 Ethernet controller for the Ethernet communications. It also has digital temperature sensors and additional relay cards for electrical device control.
+Device uses Atmel AVR Atmega328p microcontroller for the main operations and Microchip ENC28J60 Ethernet controller 
+for the Ethernet communications. It also has digital temperature sensors and additional relay cards for electrical 
+device control.
 
 
 ####################################
 # 2. Install
 ####################################
 
-NetController directory contains a Makefile which can be used in Windows,Linux or OSX. Makefile uses avr-gcc and avrdude to build and program the board. These tools must be installed to be able to program the device. Helpful tutorials for the installation of the required tools can be found from the following URL.
+NetController directory contains a Makefile which can be used in Windows,Linux or OSX. Makefile uses avr-gcc and 
+avrdude to build and program the board. These tools must be installed to be able to program the device. Helpful 
+tutorials for the installation of the required tools can be found from the following URL.
 http://www.ladyada.net/learn/avr/index.html
 
 
