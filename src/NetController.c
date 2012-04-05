@@ -9,7 +9,7 @@
 #include "NetController.h"
 
 uint8_t EEMEM eeprom_mac_addr[6] = {0x00, 0xFA, 0x20, 0xFA, 0x47, 0x31};
-uint8_t EEMEM eeprom_ip_addr[4] = {192, 168, 1, 2};
+uint8_t EEMEM eeprom_ip_addr[4] = {10, 0, 0, 5};
 
 volatile char lcd_timer_flag = 0;
 volatile char tmp_timer_flag = 0;
