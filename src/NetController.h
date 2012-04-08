@@ -34,7 +34,6 @@
 #include "eth.h"
 #include "arp.h"
 
-
 void state(char led);
 
 void timer_ms_start();

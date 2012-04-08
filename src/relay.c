@@ -5,6 +5,7 @@
  */ 
 
 #include "relay.h"
+#include "time.h"
 
 uint8_t relay_state[3] = {0, 0, 0};	//Current state bytes of the relay cards
 
@@ -303,7 +304,11 @@ void relay_update(){
 				end += end_m;
 				
 				uint8_t time_h = 0, time_m = 0;
-				netcontroller_get_time(&time_h, &time_m);
+				struct timeval tval;
+				get_time(&tval);
+				//netcontroller_get_time(&time_h, &time_m);
+				time_h = tval.h;
+				time_m = tval.m;
 				
 				uint16_t time = time_h;
 				time <<= 8;

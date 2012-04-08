@@ -7,6 +7,8 @@
 
 
 #include "NetController.h"
+#include "time.h"
+
 
 uint8_t EEMEM eeprom_mac_addr[6] = {0x00, 0xFA, 0x20, 0xFA, 0x47, 0x31};
 uint8_t EEMEM eeprom_ip_addr[4] = {10, 0, 0, 5};
@@ -14,17 +16,17 @@ uint8_t EEMEM eeprom_ip_addr[4] = {10, 0, 0, 5};
 volatile char lcd_timer_flag = 0;
 volatile char tmp_timer_flag = 0;
 
-volatile uint16_t clock_ms = 0;
-volatile uint8_t clock_s = 0;
-volatile uint8_t clock_m = 0;
-volatile uint16_t clock_h = 0;
+//volatile uint16_t clock_ms = 0;
+//volatile uint8_t clock_s = 0;
+//volatile uint8_t clock_m = 0;
+//volatile uint16_t clock_h = 0;
 
-volatile uint8_t time_s = 0;
-volatile uint8_t time_m = 0;
-volatile uint8_t time_h = 0;
+//volatile uint8_t time_s = 0;
+//volatile uint8_t time_m = 0;
+//volatile uint8_t time_h = 0;
 
-uint16_t timer_start = 0;
-uint16_t timer_end = 0;
+//uint16_t timer_start = 0;
+//uint16_t timer_end = 0;
 
 uint8_t mac_addr[6] = {0,0,0,0,0,0};
 uint8_t ip_addr[4] = {0,0,0,0};
@@ -36,6 +38,7 @@ void state(char led){
 }
 
 
+/*
 void timer_ms_start(){
 	timer_start = (clock_s * 1000) + clock_ms;
 }
@@ -73,7 +76,7 @@ void netcontroller_get_time(uint8_t* hour, uint8_t* min){
 	*hour = time_h;
 	*min = time_m;
 }
-
+*/
 
 static inline void disp_temp(){
 	
@@ -91,13 +94,19 @@ static inline void disp_temp(){
 	
 }
 
+
 static inline void disp_clock(){
 	
-	sprintf_P(lcd_buf_l1, PSTR("Clock %02u:%02u:%02u"), clock_h, clock_m, clock_s);
-	sprintf_P(lcd_buf_l2, PSTR("Time  %02u:%02u:%02u"), time_h, time_m, time_s);
+	struct clockval cval;
+	get_clock(&cval);
+	struct timeval tval;
+	get_time(&tval);
+	sprintf_P(lcd_buf_l1, PSTR("Clock %02u:%02u:%02u"), cval.h, cval.m, cval.s);
+	sprintf_P(lcd_buf_l2, PSTR("Time  %02u:%02u:%02u"), tval.h, tval.m, tval.s);
 	lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 	
 }
+
 
 static inline void disp_addr(){
 	
@@ -150,7 +159,7 @@ void ui_control_menu(){
 	}else
 	if(key == '2'){
 		sprintf_P(lcd_buf_l1, PSTR("Set clock"));
-		sprintf_P(lcd_buf_l2, PSTR("%02u:%02u:%02u"), time_h, time_m, time_s);
+		//sprintf_P(lcd_buf_l2, PSTR("%02u:%02u:%02u"), time_h, time_m, time_s);
 		lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 		
 		unsigned int idx = 0;
@@ -182,9 +191,9 @@ void ui_control_menu(){
 		sscanf_P(lcd_buf_l2, PSTR("%u:%u:%u"), &h, &m, &s);	//Read user given data
 		
 		if((h < 24) && (m < 60) && (s < 60)){	//Check that input is valid
-			time_h = h;
-			time_m = m;
-			time_s = s;	
+			//time_h = h;
+			//time_m = m;
+			//time_s = s;	
 		}
 	}
 
@@ -193,46 +202,37 @@ void ui_control_menu(){
 
 int main(void)
 {	
-	/*Load variables from EEPROM*/
+	//Load variables from EEPROM
 	eeprom_read_block(mac_addr, eeprom_mac_addr, 6);
 	eeprom_read_block(ip_addr, eeprom_ip_addr, 4);
 	
-	/*Setup status LEDs*/
+	//Setup status LEDs
 	DDRB  |= 0x3;
 	PORTB |= 0x3;
 	
-	/*TWI*/
+	//TWI
 	twi_init();
 	
-	/*Relays*/
+	//Relays
 	relay_init();
 	
-	/*Keypad*/
+	//Keypad
 	keypad_init();
 	
-	/*LCD*/
+	//LCD
 	lcd_init();
 	lcd_backlight_on();
 	
-	/*ENC28J60*/
+	//ENC28J60
 	enc28j60_init(mac_addr);
 	
-	/*Ethernet*/
+	//Ethernet
 	eth_init(mac_addr, ip_addr);
 	
-	/*Clock timer 1*/
-	if(F_CPU == 6250000){
-		TCCR1B = (1<<WGM12) | (1<<CS10);	//CTC mode, prescaling 1 (6250000 timer pulses / second)
-		OCR1A = 6249;						//Interrupt every millisecond (6250 pulses / ms)
-		TIMSK1 |= (1<<OCIE1A);				//Enable interrupt	
-	}else
-	if(F_CPU == 12500000){
-		TCCR1B = (1<<WGM12) | (1<<CS10);	//CTC mode, prescaling 1 (12500000 timer pulses / second)
-		OCR1A = 12499;						//Interrupt every millisecond (12500 pulses / ms)
-		TIMSK1 |= (1<<OCIE1A);				//Enable interrupt	
-	}
+	//Init timer
+	time_init(F_CPU);
 	
-	sei();
+	sei();	//Enable global interrupts
 	
 	state(OK);
 	
@@ -240,7 +240,7 @@ int main(void)
 	
 	char key = 0, disp = 1;
 	
-	while(1){
+	while(1){	//Main loop
 		
 		/*React to key presses*/
 		if((key = keypad_get())){
@@ -314,47 +314,4 @@ int main(void)
 	}
 	
 	return 0;
-}
-
-
-ISR(TIMER1_COMPA_vect){
-	
-	static uint16_t lcd_timer = (LCD_REFRESH - 1);
-	
-	//Following executed every millisecond
-	if(!lcd_timer--){
-		lcd_timer_flag = 1;
-		lcd_timer = (LCD_REFRESH - 1);		
-	}
-	
-	if(clock_ms++ == 999){	//Following executed every second
-		clock_ms = 0;
-		
-		tmp_timer_flag = 1;		//Set temperature update flag every second
-		
-		if(clock_s++ == 59){	//Following executed every minute
-			clock_s = 0;
-			
-			
-			if(clock_m++ == 59){	//Following executed every hour
-				clock_m = 0;
-				clock_h++;
-			}
-		}
-		
-		if(time_s++ == 59){
-			time_s = 0;
-			
-			
-			if(time_m++ == 59){
-				time_m = 0;
-				
-				if(time_h++ == 23){
-					time_h = 0;
-				}
-			}
-		}
-		
-	}
-
 }
