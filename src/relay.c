@@ -305,7 +305,7 @@ void relay_update(){
 				
 				uint8_t time_h = 0, time_m = 0;
 				struct timeval tval;
-				get_time(&tval);
+				time_get(&tval);
 				//netcontroller_get_time(&time_h, &time_m);
 				time_h = tval.h;
 				time_m = tval.m;

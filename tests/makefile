@@ -1,11 +1,11 @@
 CC = gcc
-CFLAGS = -O -DTEST
+CFLAGS = -std=c99 -Wall -g -pedantic -O -DTEST
 INCLUDES = .
 LIBS = ./lib
 RM = rm
 TARGET = tests
 
-TESTOBJS = main.o test.o
+TESTOBJS = main.o TimeTest.o
 SRC = ../src/time.o
 SRCOBJS = time.o
 

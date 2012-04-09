@@ -15,7 +15,7 @@
 
 //Compiler modifications for tests
 #ifdef TEST	//Compiling for test
-	#define ISR void interrupt_routine
+	#define ISR void interrupt_handler
 	#define TIMER1_COMPA_vect void
 #else	//Compiling for AVR
 	#include <avr/interrupt.h>
@@ -61,11 +61,13 @@ volatile uint8_t _time_s;
 void time_init(uint32_t f_cpu);
 
 //Time functions
-int get_time(struct timeval* time);
+int time_set(const struct timeval* time);
+int time_get(struct timeval* time);
 int time_print(char* buf);
 
 //Clock functions
-int get_clock(struct clockval* clock);
+int clock_set(const struct clockval* clock);
+int clock_get(struct clockval* clock);
 int clock_print(char* buf);
 
 //Timer functions
@@ -85,9 +87,12 @@ void timer_stop(struct clockval* timer);
  *	Returns elapsed time from the initialized timer struct and current clock value in milliseconds.
  *	Overflows in 49 days which is not checked.
  */
-uint32_t get_elapsed_time(struct clockval* timer);
+uint32_t timer_get_elapsed(const struct clockval* timer);
 
 
+/*
+ *	Clock interrupt handler
+ */
 ISR(TIMER1_COMPA_vect);
 
 #endif /* TIME_H */

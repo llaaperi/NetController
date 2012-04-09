@@ -98,9 +98,9 @@ static inline void disp_temp(){
 static inline void disp_clock(){
 	
 	struct clockval cval;
-	get_clock(&cval);
+	clock_get(&cval);
 	struct timeval tval;
-	get_time(&tval);
+	time_get(&tval);
 	sprintf_P(lcd_buf_l1, PSTR("Clock %02u:%02u:%02u"), cval.h, cval.m, cval.s);
 	sprintf_P(lcd_buf_l2, PSTR("Time  %02u:%02u:%02u"), tval.h, tval.m, tval.s);
 	lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
