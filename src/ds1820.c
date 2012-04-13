@@ -4,17 +4,33 @@
  * Created: 14.6.2011 15:52:19
  *  Author: Lauri
  */ 
+#ifndef F_CPU
+#define F_CPU 12500000UL
+#endif
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <avr/io.h>
+#include <avr/eeprom.h>
+#include <avr/pgmspace.h>
+#include <util/delay.h>
+#include <util/crc16.h>
 
 #include "ds1820.h"
+
+
+//Sensors
+char EEMEM _eeprom_sensor_tag1[DS1820_TAG_SIZE] = "Sensor1";
+char EEMEM _eeprom_sensor_tag2[DS1820_TAG_SIZE] = "Sensor2";
+char EEMEM _eeprom_sensor_tag3[DS1820_TAG_SIZE] = "Sensor3";
+char* EEMEM _eeprom_sensor_tags[] = {_eeprom_sensor_tag1, _eeprom_sensor_tag2, _eeprom_sensor_tag3};
+
+
 
 int temp[3] = {DS1820_TEMP_NONE, DS1820_TEMP_NONE, DS1820_TEMP_NONE};
 int temp_min[3] = {DS1820_TEMP_NONE, DS1820_TEMP_NONE, DS1820_TEMP_NONE};
 int temp_max[3] = {DS1820_TEMP_NONE, DS1820_TEMP_NONE, DS1820_TEMP_NONE};
-	
-char EEMEM eeprom_sensor_tag1[DS1820_TAG_SIZE] = "Sensor1";
-char EEMEM eeprom_sensor_tag2[DS1820_TAG_SIZE] = "Sensor2";
-char EEMEM eeprom_sensor_tag3[DS1820_TAG_SIZE] = "Sensor3";
-char* EEMEM eeprom_sensor_tags[] = {eeprom_sensor_tag1, eeprom_sensor_tag2, eeprom_sensor_tag3};
+
 
 /*Reset DS1820*/
 uint8_t ds1820_reset(int sensor){
@@ -265,7 +281,7 @@ int ds1820_print_tag(char* buf, int sensor){
 		return 0;
 	}
 	
-	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&eeprom_sensor_tags[sensor]);
+	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&_eeprom_sensor_tags[sensor]);
 		
 	while((c = (char)eeprom_read_byte((const uint8_t*)eeprom_str++)) && (idx < DS1820_TAG_SIZE)){
 		buf[idx++] = c;
@@ -284,7 +300,7 @@ int ds1820_set_tag(uint8_t len, const char* tag, int sensor){
 		len = DS1820_TAG_SIZE;
 	}
 	
-	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&eeprom_sensor_tags[sensor]);
+	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&_eeprom_sensor_tags[sensor]);
 	
 	eeprom_write_block(tag, eeprom_str, len);
 	

@@ -5,7 +5,12 @@
  *  Author: Lauri L‰‰peri
  */ 
 
+#include <string.h>
+#include "network.h"
 #include "tcp.h"
+#include "ip.h"
+#include "http.h"
+//#include "../lcd.h"
 
 static uint32_t rand_seed = 12345678; /* Initial value */
 
@@ -23,8 +28,8 @@ uint16_t tcp_chc(uint16_t len, const uint8_t* data, const uint8_t* dest_ip){
 	uint16_t chc = 0;
 	
 	//Pseudo header
-	sum += (0xFFFF & (((eth_ip_addr[0] & 0xFF)<<8) | (eth_ip_addr[1] & 0xFF)));
-	sum += (0xFFFF & (((eth_ip_addr[2] & 0xFF)<<8) | (eth_ip_addr[3] & 0xFF)));
+	sum += (0xFFFF & (((_network_ip_addr[0] & 0xFF)<<8) | (_network_ip_addr[1] & 0xFF)));
+	sum += (0xFFFF & (((_network_ip_addr[2] & 0xFF)<<8) | (_network_ip_addr[3] & 0xFF)));
 	
 	sum += (0xFFFF & (((dest_ip[0] & 0xFF)<<8) | (dest_ip[1] & 0xFF)));
 	sum += (0xFFFF & (((dest_ip[2] & 0xFF)<<8) | (dest_ip[3] & 0xFF)));
@@ -143,7 +148,7 @@ void tcp_recv(uint16_t len, const uint8_t* packet, const uint8_t* src_ip_addr){
 
 void tcp_send(uint16_t len, uint8_t type){
 	
-	uint8_t* packet = eth_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE;
+	uint8_t* packet = _network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE;
 	
 	packet[TCP_H_SRC] = (TCP_PORT_HTTP>>8);			//Source port (80)
 	packet[TCP_H_SRC + 1] = (TCP_PORT_HTTP & 0xFF);

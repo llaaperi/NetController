@@ -9,12 +9,25 @@
 #ifndef TWI_H
 #define TWI_H
 
-#include <util/twi.h>
+#include <stdint.h>
 
-void twi_init();
 
+/*
+ *
+ */
+void twi_init(uint32_t f_cpu);
+
+
+/*
+ *
+ */
 void twi_write_byte(uint8_t addr, uint8_t byte);
-char twi_read_byte(uint8_t addr, uint8_t* byte);
+
+
+/*
+ *
+ */
+int twi_read_byte(uint8_t addr, uint8_t* byte);
 
 
 

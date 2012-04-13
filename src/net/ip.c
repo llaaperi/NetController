@@ -7,8 +7,15 @@
 
 #include "ip.h"
 
+//Network addresses
+//uint8_t EEMEM _eeprom_ip_addr[4] = {10, 0, 0, 5};
+
 //static uint8_t dest_ip_addr[4];
 
+
+/*
+ *
+ */
 uint16_t ip_chc(uint16_t len, const uint8_t* data){
 	
 	uint32_t sum = 0;
@@ -33,14 +40,18 @@ uint16_t ip_chc(uint16_t len, const uint8_t* data){
 }
 
 
-
-void ip_recv(const uint8_t* packet){
+/*
+ *
+ */
+uint16_t ip_recv(uint8_t* packet, uint16_t pkt_len){
+	
+	uint16_t reply_len = 0;
 	
 	if((packet[IP_H_VESRION] & 0xF0) != IP_VERSION){	//Not IPv4
-		return;
+		return 0;
 	}
 	
-	uint16_t pkt_len = (packet[IP_H_LEN]<<8) | packet[IP_H_LEN + 1];
+	pkt_len = (packet[IP_H_LEN]<<8) | packet[IP_H_LEN + 1];
 	uint16_t payload_idx = (packet[IP_H_IHL] & 0x0F) * 4;		//Payload offset (in case header options are used)
 	uint16_t payload_len = pkt_len - payload_idx;
 	
@@ -49,11 +60,11 @@ void ip_recv(const uint8_t* packet){
 	if(payload_len != 0){
 		
 		if(packet[IP_H_PROT] == IP_PROT_ICMP){		//ICMP packet
-			icmp_recv(payload_len, &packet[payload_idx], &packet[IP_H_SRC]);
+			reply_len = icmp_recv(&packet[payload_idx], payload_len);
 		}
 	
 		if(packet[IP_H_PROT] == IP_PROT_UDP){		//UDP packet
-			return;
+			return 0;
 		}
 	
 		if(packet[IP_H_PROT] == IP_PROT_TCP){		//TCP packet
@@ -66,11 +77,16 @@ void ip_recv(const uint8_t* packet){
 		}
 		
 	}
-	
+	return 0;
 }
 
+
+/*
+ *
+ */
 void ip_send(uint16_t len, const uint8_t* dest_ip_addr){
 	
+	/*
 	uint8_t* packet = (eth_buf + ETH_HEADER_SIZE);
 	uint16_t checksum = 0;
 	
@@ -102,4 +118,5 @@ void ip_send(uint16_t len, const uint8_t* dest_ip_addr){
 	packet[IP_H_CHC + 1] = (checksum & 0xFF);
 	
 	eth_send(len + IP_HEADER_SIZE);
+	 */
 }

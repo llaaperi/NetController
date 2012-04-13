@@ -9,7 +9,7 @@
 #ifndef ICMP_H
 #define ICMP_H
 
-#include "ip.h"
+#include <stdint.h>
 
 #define ICMP_H_TYPE 0
 #define ICMP_H_CODE 1
@@ -25,6 +25,9 @@
 #define ICMP_TYPE_ECHOREQUEST 8
 #define ICMP_CODE_ECHOREQUEST 0
 
-void icmp_recv(uint16_t len, const uint8_t* packet, const uint8_t* src_ip_addr);
+/*
+ *
+ */
+uint16_t icmp_recv(uint8_t* packet, uint16_t pkt_len);
 
 #endif /* ICMP_H */

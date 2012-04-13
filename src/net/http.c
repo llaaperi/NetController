@@ -5,7 +5,29 @@
  *  Author: Lauri
  */ 
 
+#ifdef TEST
+	#define sprintf_P sprintf
+	#define strncmp_P strncmp
+	#define sscanf_P sscanf
+	#define PSTR(X) X
+	#define PROGMEM
+	#include "../../tests/mockLcd.h"
+	#include "../../tests/mockDs1820.h"
+	#include "../../tests/mockRelay.h"
+	#include "../time.h"
+#else
+	#include <avr/pgmspace.h>
+	#include "../lcd.h"
+	#include "../ds1820.h"
+	#include "../relay.h"
+	#include "../time.h"
+#endif
+
+
+#include <stdio.h>
+#include <string.h>
 #include "http.h"
+#include "tcp.h"
 
 /*
 uint16_t http_write_buf(uint8_t* buf, const prog_char* prog_str){
@@ -475,6 +497,7 @@ const char* uris[] PROGMEM = {uri0, uri1, uri2, uri3, uri4, uri5, uri6};
 
 void http_recv(uint16_t len, const char* packet){
 	
+	/*
 	char* reply = (char *)(eth_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + TCP_HEADER_SIZE);
 	uint16_t reply_len = 0;
 	//uint16_t hlen = 0;
@@ -528,5 +551,5 @@ void http_recv(uint16_t len, const char* packet){
 		return;
 		
 	}
-	
+	*/
 }

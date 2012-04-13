@@ -4,53 +4,61 @@
  *  Author: Lauri
  */ 
 
+#include <stdio.h>
+#include <avr/eeprom.h>
 #include "relay.h"
+#include "ds1820.h"
+#include "twi.h"
+#include "lcd.h"
 #include "time.h"
 
-uint8_t relay_state[3] = {0, 0, 0};	//Current state bytes of the relay cards
-
+//Control bytes of the relay cards
 //bit 0 = manual, bit 1 = sensor, bit 2 = time, bit 3 = sensor on/off, bits 4-7 sensor id
-uint8_t EEMEM eeprom_relay_ctrl[3][8] = {{RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL},
-										 {RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL},
-										 {RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL}};		//Control bytes of the relay cards
+uint8_t EEMEM _eeprom_relay_ctrl[3][8] = {	{RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL},
+	{RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL},
+	{RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL, RELAY_CTRL_MANUAL}};
 
-uint16_t EEMEM eeprom_relay_sensor[3][8];	//Sensor value with the control bit 3 and 4-7 defines the relay behavior
-uint16_t EEMEM eeprom_relay_timer_start[3][8];
-uint16_t EEMEM eeprom_relay_timer_end[3][8];
+uint16_t EEMEM _eeprom_relay_sensor[3][8];	//Sensor value with the control bit 3 and 4-7 defines the relay behavior
+uint16_t EEMEM _eeprom_relay_timer_start[3][8];
+uint16_t EEMEM _eeprom_relay_timer_end[3][8];
 
 //uint8_t EEMEM eeprom_relay_tags[384] = {0};	//One buffer for all tags, 16 bytes / tag (16*8*3=384)
 
-char EEMEM eeprom_relay_tag11[RELAY_TAG_SIZE] = "Relay1";	//Tags for card 1
-char EEMEM eeprom_relay_tag12[RELAY_TAG_SIZE] = "Relay2";
-char EEMEM eeprom_relay_tag13[RELAY_TAG_SIZE] = "Relay3";
-char EEMEM eeprom_relay_tag14[RELAY_TAG_SIZE] = "Relay4";
-char EEMEM eeprom_relay_tag15[RELAY_TAG_SIZE] = "Relay5";
-char EEMEM eeprom_relay_tag16[RELAY_TAG_SIZE] = "Relay6";
-char EEMEM eeprom_relay_tag17[RELAY_TAG_SIZE] = "Relay7";
-char EEMEM eeprom_relay_tag18[RELAY_TAG_SIZE] = "Relay8";
+char EEMEM _eeprom_relay_tag11[RELAY_TAG_SIZE] = "Relay1";	//Tags for card 1
+char EEMEM _eeprom_relay_tag12[RELAY_TAG_SIZE] = "Relay2";
+char EEMEM _eeprom_relay_tag13[RELAY_TAG_SIZE] = "Relay3";
+char EEMEM _eeprom_relay_tag14[RELAY_TAG_SIZE] = "Relay4";
+char EEMEM _eeprom_relay_tag15[RELAY_TAG_SIZE] = "Relay5";
+char EEMEM _eeprom_relay_tag16[RELAY_TAG_SIZE] = "Relay6";
+char EEMEM _eeprom_relay_tag17[RELAY_TAG_SIZE] = "Relay7";
+char EEMEM _eeprom_relay_tag18[RELAY_TAG_SIZE] = "Relay8";
 
-char EEMEM eeprom_relay_tag21[RELAY_TAG_SIZE] = "Relay1";	//Tags for card 2
-char EEMEM eeprom_relay_tag22[RELAY_TAG_SIZE] = "Relay2";
-char EEMEM eeprom_relay_tag23[RELAY_TAG_SIZE] = "Relay3";
-char EEMEM eeprom_relay_tag24[RELAY_TAG_SIZE] = "Relay4";
-char EEMEM eeprom_relay_tag25[RELAY_TAG_SIZE] = "Relay5";
-char EEMEM eeprom_relay_tag26[RELAY_TAG_SIZE] = "Relay6";
-char EEMEM eeprom_relay_tag27[RELAY_TAG_SIZE] = "Relay7";
-char EEMEM eeprom_relay_tag28[RELAY_TAG_SIZE] = "Relay8";
+char EEMEM _eeprom_relay_tag21[RELAY_TAG_SIZE] = "Relay1";	//Tags for card 2
+char EEMEM _eeprom_relay_tag22[RELAY_TAG_SIZE] = "Relay2";
+char EEMEM _eeprom_relay_tag23[RELAY_TAG_SIZE] = "Relay3";
+char EEMEM _eeprom_relay_tag24[RELAY_TAG_SIZE] = "Relay4";
+char EEMEM _eeprom_relay_tag25[RELAY_TAG_SIZE] = "Relay5";
+char EEMEM _eeprom_relay_tag26[RELAY_TAG_SIZE] = "Relay6";
+char EEMEM _eeprom_relay_tag27[RELAY_TAG_SIZE] = "Relay7";
+char EEMEM _eeprom_relay_tag28[RELAY_TAG_SIZE] = "Relay8";
 
-char EEMEM eeprom_relay_tag31[RELAY_TAG_SIZE] = "Relay1";	//Tags for card 3
-char EEMEM eeprom_relay_tag32[RELAY_TAG_SIZE] = "Relay2";
-char EEMEM eeprom_relay_tag33[RELAY_TAG_SIZE] = "Relay3";
-char EEMEM eeprom_relay_tag34[RELAY_TAG_SIZE] = "Relay4";
-char EEMEM eeprom_relay_tag35[RELAY_TAG_SIZE] = "Relay5";
-char EEMEM eeprom_relay_tag36[RELAY_TAG_SIZE] = "Relay6";
-char EEMEM eeprom_relay_tag37[RELAY_TAG_SIZE] = "Relay7";
-char EEMEM eeprom_relay_tag38[RELAY_TAG_SIZE] = "Relay8";
+char EEMEM _eeprom_relay_tag31[RELAY_TAG_SIZE] = "Relay1";	//Tags for card 3
+char EEMEM _eeprom_relay_tag32[RELAY_TAG_SIZE] = "Relay2";
+char EEMEM _eeprom_relay_tag33[RELAY_TAG_SIZE] = "Relay3";
+char EEMEM _eeprom_relay_tag34[RELAY_TAG_SIZE] = "Relay4";
+char EEMEM _eeprom_relay_tag35[RELAY_TAG_SIZE] = "Relay5";
+char EEMEM _eeprom_relay_tag36[RELAY_TAG_SIZE] = "Relay6";
+char EEMEM _eeprom_relay_tag37[RELAY_TAG_SIZE] = "Relay7";
+char EEMEM _eeprom_relay_tag38[RELAY_TAG_SIZE] = "Relay8";
 
 //Store tag pointers to the two-dimensional array for easy indexing
-char* EEMEM eeprom_relay_tags[3][8] = {{eeprom_relay_tag11, eeprom_relay_tag12, eeprom_relay_tag13, eeprom_relay_tag14, eeprom_relay_tag15, eeprom_relay_tag16, eeprom_relay_tag17, eeprom_relay_tag18},
-										{eeprom_relay_tag21, eeprom_relay_tag22, eeprom_relay_tag23, eeprom_relay_tag24, eeprom_relay_tag25, eeprom_relay_tag26, eeprom_relay_tag27, eeprom_relay_tag28},
-										{eeprom_relay_tag31, eeprom_relay_tag32, eeprom_relay_tag33, eeprom_relay_tag34, eeprom_relay_tag35, eeprom_relay_tag36, eeprom_relay_tag37, eeprom_relay_tag38}};
+char* EEMEM _eeprom_relay_tags[3][8] = {{_eeprom_relay_tag11, _eeprom_relay_tag12, _eeprom_relay_tag13, _eeprom_relay_tag14, _eeprom_relay_tag15, _eeprom_relay_tag16, _eeprom_relay_tag17, _eeprom_relay_tag18},
+	{_eeprom_relay_tag21, _eeprom_relay_tag22, _eeprom_relay_tag23, _eeprom_relay_tag24, _eeprom_relay_tag25, _eeprom_relay_tag26, _eeprom_relay_tag27, _eeprom_relay_tag28},
+	{_eeprom_relay_tag31, _eeprom_relay_tag32, _eeprom_relay_tag33, _eeprom_relay_tag34, _eeprom_relay_tag35, _eeprom_relay_tag36, _eeprom_relay_tag37, _eeprom_relay_tag38}};
+
+
+
+uint8_t relay_state[3] = {0, 0, 0};	//Current state bytes of the relay cards
 
 
 static char card_to_addr(int card){
@@ -88,7 +96,7 @@ void relay_switch(int card, int relay, int operation){
 	
 	if(addr != 0){
 		
-		uint8_t ctrl = eeprom_read_byte(&eeprom_relay_ctrl[card][relay]);
+		uint8_t ctrl = eeprom_read_byte(&_eeprom_relay_ctrl[card][relay]);
 		
 		switch(operation){
 			case RELAY_OP_TOGGLE: ctrl ^= RELAY_CTRL_STATE; break;
@@ -96,7 +104,7 @@ void relay_switch(int card, int relay, int operation){
 			case RELAY_OP_ON: ctrl |= RELAY_CTRL_STATE; break;
 		}
 		
-		eeprom_write_byte(&eeprom_relay_ctrl[card][relay], ctrl);
+		eeprom_write_byte(&_eeprom_relay_ctrl[card][relay], ctrl);
 		
 		/*
 		uint8_t bitmask = 0;
@@ -155,7 +163,7 @@ void relay_set_state(int card, unsigned char state){
 unsigned char relay_get_ctrl(int card, int relay){
 	
 	if((card >= 0) && (card <= 2)){
-		return eeprom_read_byte(&eeprom_relay_ctrl[card][relay]);
+		return eeprom_read_byte(&_eeprom_relay_ctrl[card][relay]);
 	}
 	return 0;
 }
@@ -165,7 +173,7 @@ void relay_set_ctrl(int card, int relay, unsigned char ctrl){
 	char addr = card_to_addr(card);
 	
 	if(addr != 0){
-		eeprom_write_byte(&eeprom_relay_ctrl[card][relay], ctrl);		//Update relay control to the eeprom
+		eeprom_write_byte(&_eeprom_relay_ctrl[card][relay], ctrl);		//Update relay control to the eeprom
 	}
 	
 }
@@ -176,7 +184,7 @@ void relay_set_ctrl_method(int card, int relay, unsigned char method){
 	
 	if(addr != 0){
 		
-		uint8_t ctrl = eeprom_read_byte(&eeprom_relay_ctrl[card][relay]);
+		uint8_t ctrl = eeprom_read_byte(&_eeprom_relay_ctrl[card][relay]);
 		
 		ctrl &= 0xF8;	//Clear control method bits (0-2)
 		ctrl |= (method & 0x07);	//Change control method but keep other information
@@ -185,7 +193,7 @@ void relay_set_ctrl_method(int card, int relay, unsigned char method){
 		sprintf(lcd_buf_l2, "Ctrl 0x%x", ctrl);
 		lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 		
-		eeprom_write_byte(&eeprom_relay_ctrl[card][relay], ctrl);		//Update relay control to the eeprom
+		eeprom_write_byte(&_eeprom_relay_ctrl[card][relay], ctrl);		//Update relay control to the eeprom
 	}
 }
 
@@ -203,7 +211,7 @@ int relay_set_tag(uint8_t len, const char* tag, int card, int relay){
 		len = RELAY_TAG_SIZE;
 	}
 	
-	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&eeprom_relay_tags[card][relay]);
+	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&_eeprom_relay_tags[card][relay]);
 	
 	eeprom_write_block(tag, eeprom_str, len);
 	
@@ -222,7 +230,7 @@ int relay_print_tag(char* buf, int card, int relay){
 	
 	if(buf != NULL){
 		
-		eeprom_str = (uint8_t *)eeprom_read_word((void *)&eeprom_relay_tags[card][relay]);
+		eeprom_str = (uint8_t *)eeprom_read_word((void *)&_eeprom_relay_tags[card][relay]);
 		
 		while((c = eeprom_read_byte(eeprom_str++)) && (idx < RELAY_TAG_SIZE)){
 			buf[idx++] = c;
@@ -243,7 +251,7 @@ void relay_update(){
 		
 		for(int relay = 0; relay < 8; relay++){
 			
-			ctrl = eeprom_read_byte(&eeprom_relay_ctrl[card][relay]);
+			ctrl = eeprom_read_byte(&_eeprom_relay_ctrl[card][relay]);
 			
 			
 			if(ctrl & RELAY_CTRL_MANUAL){
@@ -255,7 +263,7 @@ void relay_update(){
 				
 				sensor = (ctrl>>4);
 				
-				val = (int)eeprom_read_word(&eeprom_relay_sensor[card][relay]);
+				val = (int)eeprom_read_word(&_eeprom_relay_sensor[card][relay]);
 				cur_val = ds1820_get_cur(sensor);
 				
 				if(cur_val == DS1820_TEMP_NONE || cur_val == DS1820_TEMP_INIT){
@@ -378,14 +386,14 @@ void relay_update(){
 void relay_set_sensor(int card, int relay, int value){
 	
 	if((card >= 0) && (card <= 2)){
-		eeprom_write_word(&eeprom_relay_sensor[card][relay], value);	//Update sensor value to the eeprom
+		eeprom_write_word(&_eeprom_relay_sensor[card][relay], value);	//Update sensor value to the eeprom
 	}
 }
 
 int relay_get_sensor(int card, int relay){
 	
 	if((card >= 0) && (card <= 2)){
-		return (int)eeprom_read_word(&eeprom_relay_sensor[card][relay]);
+		return (int)eeprom_read_word(&_eeprom_relay_sensor[card][relay]);
 	}
 	return 0;
 }
@@ -404,9 +412,9 @@ void relay_get_timer(int card, int relay, uint8_t type, uint8_t* hour, uint8_t* 
 	uint16_t time = 0;
 	
 	if(type == RELAY_TIMER_START){
-		time = eeprom_read_word(&eeprom_relay_timer_start[card][relay]);
+		time = eeprom_read_word(&_eeprom_relay_timer_start[card][relay]);
 	}else{
-		time = eeprom_read_word(&eeprom_relay_timer_end[card][relay]);
+		time = eeprom_read_word(&_eeprom_relay_timer_end[card][relay]);
 	}
 	
 	*hour = (time>>8);
@@ -434,9 +442,9 @@ void relay_set_timer(int card, int relay, uint8_t type, uint8_t hour, uint8_t mi
 	time += min;
 	
 	if(type == RELAY_TIMER_START){
-		eeprom_write_word(&eeprom_relay_timer_start[card][relay], time);
+		eeprom_write_word(&_eeprom_relay_timer_start[card][relay], time);
 	}else{
-		eeprom_write_word(&eeprom_relay_timer_end[card][relay], time);
+		eeprom_write_word(&_eeprom_relay_timer_end[card][relay], time);
 	}
 	
 }

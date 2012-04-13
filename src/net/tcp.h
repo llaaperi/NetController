@@ -9,10 +9,6 @@
 #ifndef TCP_H
 #define TCP_H
 
-#include "ip.h"
-#include "http.h"
-#include "lcd.h"
-
 #define TCP_H_SRC 0
 #define TCP_H_DEST 2
 #define TCP_H_SQ 4
@@ -44,6 +40,8 @@
 #define TCP_MAX_CONN 3
 
 #define TCP_PORT_HTTP 80
+
+#include <stdint.h>
 
 typedef struct{
 	uint8_t active;

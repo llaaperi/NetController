@@ -12,7 +12,6 @@
 #include "eth.h"
 #include "icmp.h"
 #include "tcp.h"
-#include "lcd.h"
 
 #define IP_VERSION 0x40
 #define IP_IHL 0x05
@@ -21,6 +20,7 @@
 #define IP_FR 0x00
 #define IP_TTL 64
 
+//Protocol numbers
 #define IP_PROT_ICMP 1
 #define IP_PROT_TCP 6
 #define IP_PROT_UDP 17
@@ -40,11 +40,24 @@
 #define IP_H_DEST 16
 
 #define IP_HEADER_SIZE 20
+#define IP_ADDR_LEN 4
 
 
+/*
+ *	Function calculates checksum of the header
+ */
 uint16_t ip_chc(uint16_t len, const uint8_t* data);
 
-void ip_recv(const uint8_t* packet);
+
+/*
+ *	Receive IP packet
+ */
+uint16_t ip_recv(uint8_t* packet, uint16_t pkt_len);
+
+
+/*
+ *	Send IP packet
+ */
 void ip_send(uint16_t len, const uint8_t* dest_ip_addr);
 
 #endif /* IP_H */

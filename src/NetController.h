@@ -9,7 +9,7 @@
 #ifndef NETCONTROLLER_H
 #define NETCONTROLLER_H
 
-
+/*
 //#define F_CPU 6250000UL
 //#define F_CPU 8000000UL
 #define F_CPU 12500000UL
@@ -35,15 +35,6 @@
 #include "arp.h"
 
 void state(char led);
-
-void timer_ms_start();
-void timer_ms_stop();
-void timer_ms_print();
-
-int clock_print(char *buf);
-int time_print(char *buf);
-
-void netcontroller_get_time(uint8_t* hour, uint8_t* min);
-
+*/
 
 #endif /* NETCONTROLLER_H */

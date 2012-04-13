@@ -5,9 +5,9 @@ LIBS = ./lib
 RM = rm
 TARGET = tests
 
-TESTOBJS = main.o TimeTest.o
-SRC = ../src/time.o
-SRCOBJS = time.o
+TESTOBJS = main.o TimeTest.o NetworkTest.o mockDs1820.o mockEnc28j60.o mockLcd.o mockRelay.o
+SRC = ../src/time.o ../src/net/network.o ../src/net/eth.o ../src/net/arp.o ../src/net/ip.o  ../src/net/icmp.o  ../src/net/tcp.o ../src/net/http.o
+SRCOBJS = time.o network.o eth.o arp.o ip.o icmp.o tcp.o http.o
 
 
 all: $(TARGET)
