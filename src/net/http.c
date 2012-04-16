@@ -321,8 +321,8 @@ void http_send_login(char* buf, uint8_t type){
 	
 	len += sprintf_P((buf + len), PSTR("</body></html>"));	
 	
-	sprintf_P(lcd_buf_l1, PSTR("HTTP:%u.%u.%u.%u"), _socket->dest_ip[0], _socket->dest_ip[1], _socket->dest_ip[2], _socket->dest_ip[3]);
-	lcd_write_buffer(lcd_buf_l1, NULL);
+	//sprintf_P(lcd_buf_l1, PSTR("HTTP:%u.%u.%u.%u"), _socket->dest_ip[0], _socket->dest_ip[1], _socket->dest_ip[2], _socket->dest_ip[3]);
+	//lcd_write_buffer(lcd_buf_l1, NULL);
 	
 	tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, len);	//Send final part of the page (FIN)
 }
@@ -547,6 +547,93 @@ const char uri5[] PROGMEM = "/Relay2.html";
 const char uri6[] PROGMEM = "/Relay3.html";
 const char* uris[] PROGMEM = {uri0, uri1, uri2, uri3, uri4, uri5, uri6};
 
+/*
+ *
+ */
+void http_recv_get(char* message, uint16_t msg_len){
+	
+	char* reply = (char *)(_network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + TCP_HEADER_SIZE);
+	uint16_t reply_len = 0;
+	int req_page = -1;
+	
+	//Check if page URI
+	for(int i = 0; i < 7; i++){
+		char* str = (char*)pgm_read_word(&uris[i]);	//Read pointer to the URI string from the program memory
+		if(!strncmp_P(message + 4, str, strlen_P(str))){
+			req_page = i;
+			break;
+		}
+	}
+	
+	//Send page
+	if(req_page >= 0){	//URI found -> send OK and page
+		reply_len += sprintf_P(reply, PSTR("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nRefresh: 60\r\n\r\n"));
+		tcp_send(_socket, TCP_FLAG_ACK, reply_len);				//Send http header first
+		if(req_page == 0){
+			//sprintf_P(lcd_buf_l1, PSTR("HTTP: send login"));
+			//lcd_write_buffer(lcd_buf_l1, NULL);
+			http_send_login(reply, 0);		//Send login page
+		}else{
+			http_send_page(reply, req_page);	//Send web page
+		}
+		return;
+	}
+	
+	//Check if form URI
+	if(!strncmp_P(message + 4, PSTR("/Form"), 5)){	//Card1 page
+		req_page = http_form_handler(message + 4);	//Return the page where the client will be redirected
+	}
+	if(req_page >= 0){	//URI found -> redirect
+		reply_len += sprintf_P(reply, PSTR("HTTP/1.1 303 See Other\r\nContent-Type: text/html\r\nLocation: "));
+		reply_len += sprintf_P((reply + reply_len), (char*)pgm_read_word(&uris[req_page]));
+		reply_len += sprintf_P((reply + reply_len), PSTR("\r\n\r\n"));
+		tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
+		return;
+	}
+	
+	//URI not found
+	reply_len += sprintf_P(reply, PSTR("HTTP/1.1 404 Not Found\r\n\r\n"));
+	tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
+	return;
+}
+
+
+/*
+ *
+ */
+void http_recv_post(char* message, uint16_t msg_len){
+	
+	char* reply = (char *)(_network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + TCP_HEADER_SIZE);
+	uint16_t reply_len = 0;
+	
+	/*
+	 uint16_t hlen = http_header_len(packet, pkt_len);
+	 //Check if some of the header is missing
+	 if(hlen == pkt_len){
+	 post_flag = 1;	//Wait subsequent packet
+	 tcp_send(_socket, TCP_FLAG_ACK, 0);
+	 return 0;
+	 }
+	 post_flag = 0;
+	 */
+	//char user[32] = "admin";
+	//char pwd[32] = "salasana";
+	
+	//if(http_parse_login((char*)(packet + hlen), pkt_len - hlen, user, pwd)){
+	//	return 0;
+	//}
+	
+	
+	
+	//sprintf_P(lcd_buf_l1, PSTR("User: %s"), user);
+	//sprintf_P(lcd_buf_l2, PSTR("Pwd: %s"), pwd);
+	//lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+	
+	reply_len += sprintf_P(reply, PSTR("HTTP/1.1 303 See Other\r\nContent-Type: text/html\r\nLocation: /NetController.html\r\n\r\n"));
+	tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
+	return;
+}
+
 
 /*
  *
@@ -554,84 +641,23 @@ const char* uris[] PROGMEM = {uri0, uri1, uri2, uri3, uri4, uri5, uri6};
 void http_recv(uint8_t* packet, uint16_t pkt_len, struct tcp_socket* socket){
 	
 	_socket = socket;	//Set current socket
-	
-	char* reply = (char *)(_network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + TCP_HEADER_SIZE);
-	uint16_t reply_len = 0;
-	//uint16_t hlen = 0;
+	uint16_t hlen = 0;
 	static uint8_t post_flag = 0;
-
 	
 	//Handle POST from login
 	if(post_flag || !strncmp_P((char*)packet, PSTR("POST "), 5)){
 		
-		/*
-		uint16_t hlen = http_header_len(packet, pkt_len);
-		//Check if some of the header is missing
 		if(hlen == pkt_len){
 			post_flag = 1;	//Wait subsequent packet
-			tcp_send(_socket, TCP_FLAG_ACK, 0);
-			return 0;
+		}else{
+			post_flag = 0;	//POST mesage finished
 		}
-		post_flag = 0;
-		*/
-		//char user[32] = "admin";
-		//char pwd[32] = "salasana";
 		
-		//if(http_parse_login((char*)(packet + hlen), pkt_len - hlen, user, pwd)){
-		//	return 0;
-		//}
-		
-		
-		
-		//sprintf_P(lcd_buf_l1, PSTR("User: %s"), user);
-		//sprintf_P(lcd_buf_l2, PSTR("Pwd: %s"), pwd);
-		//lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-		
-		reply_len += sprintf_P(reply, PSTR("HTTP/1.1 303 See Other\r\nContent-Type: text/html\r\nLocation: /NetController.html\r\n\r\n"));
-		tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
-		return;
+		http_recv_post((char*)packet, pkt_len);
 	}
 	
+	//Handle GET messages
 	if(!strncmp_P((char*)packet, PSTR("GET "), 4)){
-
-		int req_page = -1;
-		
-		//Check if page URI
-		for(int i = 0; i < 7; i++){
-			char* str = (char*)pgm_read_word(&uris[i]);	//Read pointer to the URI string from the program memory
-			if(!strncmp_P((char*)(packet + 4), str, strlen_P(str))){
-				req_page = i;
-				break;
-			}
-		}
-		if(req_page >= 0){	//URI found -> send OK and page
-			reply_len += sprintf_P(reply, PSTR("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nRefresh: 60\r\n\r\n"));
-			tcp_send(_socket, TCP_FLAG_ACK, reply_len);				//Send http header first
-			if(req_page == 0){
-				//sprintf_P(lcd_buf_l1, PSTR("HTTP: send login"));
-				//lcd_write_buffer(lcd_buf_l1, NULL);
-				http_send_login(reply, 0);		//Send login page
-			}else{
-				http_send_page(reply, req_page);	//Send web page
-			}
-			return;
-		}
-		
-		//Check if form URI
-		if(!strncmp_P((char*)(packet + 4), PSTR("/Form"), 5)){	//Card1 page
-			req_page = http_form_handler((char*)(packet + 4));	//Return the page where the client will be redirected
-		}
-		if(req_page >= 0){	//URI found -> redirect
-			reply_len += sprintf_P(reply, PSTR("HTTP/1.1 303 See Other\r\nContent-Type: text/html\r\nLocation: "));
-			reply_len += sprintf_P((reply + reply_len), (char*)pgm_read_word(&uris[req_page]));
-			reply_len += sprintf_P((reply + reply_len), PSTR("\r\n\r\n"));
-			tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
-			return;
-		}
-		
-		//URI not found
-		reply_len += sprintf_P(reply, PSTR("HTTP/1.1 404 Not Found\r\n\r\n"));
-		tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
-		return;
+		http_recv_get((char*)packet, pkt_len);
 	}
 }
