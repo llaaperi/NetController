@@ -10,8 +10,8 @@
 #define TCP_H
 
 #define TCP_H_SRC 0
-#define TCP_H_DEST 2
-#define TCP_H_SQ 4
+#define TCP_H_DST 2
+#define TCP_H_SEQ 4
 #define TCP_H_ACK 8
 #define TCP_H_OFFSET 12
 #define TCP_H_FLAGS_H 12
@@ -43,15 +43,41 @@
 
 #include <stdint.h>
 
-typedef struct{
+struct tcp_header{
+	uint16_t src_port;
+	uint16_t dst_port;
+	uint32_t seqnum;
+	uint32_t acknum;
+	uint8_t offset;
+	uint8_t flags;
+	uint16_t window;
+	uint16_t chc;
+	uint16_t urg;
+	
+	uint8_t* payload;
+	uint16_t payload_len;
+};
+
+
+struct tcp_socket{
 	uint8_t active;
+	uint8_t handshake;
 	uint32_t seq;
 	uint32_t ack;
 	uint16_t dest_port;
 	uint8_t dest_ip[4];
-} Tcp_socket;
+};
 
-void tcp_recv(uint16_t len, const uint8_t* packet, const uint8_t* src_ip_addr);
-void tcp_send(uint16_t len, uint8_t type);
+
+/*
+ *
+ */
+void tcp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr);
+
+
+/*
+ *
+ */
+void tcp_send(struct tcp_socket* socket, uint8_t type, uint16_t pkt_len);
 
 #endif /* TCP_H */

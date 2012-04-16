@@ -65,7 +65,8 @@ static void initArpRequest(){
 	memcpy(_recvBuffer + ETH_HEADER_SIZE + ARP_P_SRC_MAC, _srcMacAddr, 6);
 	memcpy(_recvBuffer + ETH_HEADER_SIZE + ARP_P_SRC_IP, _srcIpAddr, 4);
 	
-	memset(_recvBuffer + ETH_HEADER_SIZE + ARP_P_DEST_MAC, 0, 10);	//Zero dest address in request
+	memset(_recvBuffer + ETH_HEADER_SIZE + ARP_P_DEST_MAC, 0, 6);	//Zero dest MAC address in request
+	memcpy(_recvBuffer + ETH_HEADER_SIZE + ARP_P_DEST_IP, _myIpAddr, 4);
 }
 
 
@@ -134,9 +135,9 @@ static void testArpRequest(void){
 	
 	_recvLen = ETH_HEADER_SIZE + ARP_PACKET_SIZE;
 	
-	//print_recv();
+	print_recv();
 	network_recv();
-	//print_send();
+	print_send();
 	
 	checkEthHeader(ETH_TYPE_ARP);
 	checkArpReply();

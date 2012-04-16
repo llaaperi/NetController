@@ -9,7 +9,7 @@
 #ifndef ETH_H
 #define ETH_H
 
-#define ETH_H_MAC_DEST 0
+#define ETH_H_MAC_DST 0
 #define ETH_H_MAC_SRC 6
 #define ETH_H_TYPE_H 12
 #define ETH_H_TYPE_L 13
@@ -25,16 +25,24 @@
 
 #include <stdint.h>
 
+struct eth_header{
+	uint8_t dst_mac[6];
+	uint8_t src_mac[6];
+	uint16_t type;
+	uint8_t* payload;
+	uint16_t payload_len;
+};
+
+
 /*
  * Receive packet.
- * Return reply length
  */
-uint16_t eth_recv(uint8_t* packet, uint16_t pkt_len);
+void eth_recv(uint8_t* packet, uint16_t pkt_len);
 
 
 /*
  *
  */
-void eth_send(uint16_t len);
+void eth_send(const uint8_t* dst_mac_addr, uint16_t type, uint16_t len);
 
 #endif /* eth_H_ */

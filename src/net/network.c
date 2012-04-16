@@ -43,22 +43,18 @@ void network_init(){
 }
 
 /*
- *	Receive packet and send reply if necessary
+ *	Receive packet
  */
 void network_recv(){
 	
-	uint16_t pkt_len = 0, reply_len = 0;
-	
+	uint16_t pkt_len = 0;
 	pkt_len = enc28j60_recv(NETWORK_BUF_SIZE, _network_buf);
 	
 	if(pkt_len == 0){	//Return if there is no packet
 		return;
 	}
 	
-	reply_len = eth_recv(_network_buf, pkt_len);
-	if(reply_len > 0){	//Send reply
-		network_send(reply_len);
-	}
+	eth_recv(_network_buf, pkt_len);
 }
 
 

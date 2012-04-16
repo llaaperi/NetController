@@ -9,9 +9,12 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include <stdint.h>
+#include "tcp.h"
+
 //const char FlashString[] PROGMEM = "This is a string ";
 
-void http_recv(uint16_t len, const char* packet);
+void http_recv(uint8_t* packet, uint16_t pkt_len, struct tcp_socket* socket);
 
 
 #endif /* HTTP_H */

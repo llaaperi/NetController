@@ -37,11 +37,28 @@
 #define IP_H_PROT 9
 #define IP_H_CHC 10
 #define IP_H_SRC 12
-#define IP_H_DEST 16
+#define IP_H_DST 16
 
 #define IP_HEADER_SIZE 20
 #define IP_ADDR_LEN 4
 
+
+struct ip_header{
+	uint8_t version;
+	uint8_t ihl;	//Internet Header Length
+	uint16_t tos;	//Type of service and congestion notification
+	uint16_t len;	//Total length (header + data)
+	uint16_t id;	//identification
+	uint16_t flfr;	//Flags and fragment offset
+	uint8_t ttl;	//Time to live
+	uint8_t prot;	//Payload protocol
+	uint16_t hchc;	//Header checksum
+	uint8_t src_ip[4];
+	uint8_t dst_ip[4];
+	
+	uint8_t* payload;
+	uint16_t payload_len;
+};
 
 /*
  *	Function calculates checksum of the header
@@ -52,12 +69,12 @@ uint16_t ip_chc(uint16_t len, const uint8_t* data);
 /*
  *	Receive IP packet
  */
-uint16_t ip_recv(uint8_t* packet, uint16_t pkt_len);
+void ip_recv(uint8_t* packet, uint16_t pkt_len);
 
 
 /*
  *	Send IP packet
  */
-void ip_send(uint16_t len, const uint8_t* dest_ip_addr);
+void ip_send(const uint8_t* dst_ip, uint8_t protocol, uint16_t pkt_len);
 
 #endif /* IP_H */

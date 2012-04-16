@@ -67,9 +67,7 @@ int main(void){
 	while(1){	//Main loop
 		
 		/*Receive new packets*/
-		if(1){
-			network_recv();
-		}
+		network_recv();
 		
 		/*Refresh relays*/
 		relay_update();
@@ -87,7 +85,7 @@ int main(void){
 		
 		/*Refresh LCD*/
 		if(timer_get_elapsed(&lcd_timer) >= 200){	//Refresh LCD every 200ms
-			ui_refresh_display();	
+			//ui_refresh_display();	
 			timer_start(&lcd_timer);	//Reset LCD timer
 		}		
 	}

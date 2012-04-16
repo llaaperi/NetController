@@ -19,6 +19,7 @@
 #include "lcd.h"
 #include "relay.h"
 #include "time.h"
+#include "net/network.h"
 
 
 /*
@@ -62,8 +63,8 @@ static inline void disp_clock(){
  */
 static inline void disp_addr(){
 	
-	//sprintf_P(lcd_buf_l1, PSTR("%02x%02x%02x%02x%02x%02x"), mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-	//sprintf_P(lcd_buf_l2, PSTR("%d.%d.%d.%d"), ip_addr[0], ip_addr[1], ip_addr[2], ip_addr[3]);
+	sprintf_P(lcd_buf_l1, PSTR("%02x%02x%02x%02x%02x%02x"), _network_mac_addr[0], _network_mac_addr[1], _network_mac_addr[2], _network_mac_addr[3], _network_mac_addr[4], _network_mac_addr[5]);
+	sprintf_P(lcd_buf_l2, PSTR("%d.%d.%d.%d"), _network_ip_addr[0], _network_ip_addr[1], _network_ip_addr[2], _network_ip_addr[3]);
 	lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 	
 }

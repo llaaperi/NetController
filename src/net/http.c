@@ -26,8 +26,11 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "http.h"
+#include "network.h"
+#include "eth.h"
+#include "ip.h"
 #include "tcp.h"
+#include "http.h"
 
 /*
 uint16_t http_write_buf(uint8_t* buf, const prog_char* prog_str){
@@ -41,8 +44,12 @@ uint16_t http_write_buf(uint8_t* buf, const prog_char* prog_str){
 }
 */
 
+struct tcp_socket* _socket;	//Current client socket
 
 
+/*
+ *
+ */
 uint16_t http_page_main(char* buf){
 	
 	uint16_t len = 0;
@@ -54,6 +61,10 @@ uint16_t http_page_main(char* buf){
 	return len;
 }
 
+
+/*
+ *
+ */
 uint16_t http_page_time(char* buf){
 	
 	uint16_t len = 0;
@@ -63,6 +74,10 @@ uint16_t http_page_time(char* buf){
 	return len;
 }
 
+
+/*
+ *
+ */
 uint16_t http_page_sensor(char* buf){
 	
 	uint16_t len = 0;
@@ -96,7 +111,7 @@ uint16_t http_page_sensor(char* buf){
 		len += sprintf_P((buf + len), PSTR("</font></td><td><input type=\"submit\" name=\"sensor%d\" value=\"Reset\"></td></form></tr>"), i);	//Reset button
 		
 		if(i < (sensor_cnt - 1)){
-			tcp_send(len, 2);	//Send sensor rows separately, excluding the last one which is appended with the final part of the page
+			tcp_send(_socket, TCP_FLAG_ACK, len);	//Send sensor rows separately, excluding the last one which is appended with the final part of the page
 			len = 0;			//Reset length counter
 		}
 		
@@ -109,6 +124,10 @@ uint16_t http_page_sensor(char* buf){
 	return len;
 }
 
+
+/*
+ *
+ */
 uint16_t http_page_relay(char* buf, int card){
 	
 	uint16_t len = 0;
@@ -145,7 +164,7 @@ uint16_t http_page_relay(char* buf, int card){
 		if(ctrl & RELAY_CTRL_MANUAL){	//Add button for switching relay state
 			
 			if(relay == 0){
-				tcp_send(len, 2);	//Send separately
+				tcp_send(_socket, TCP_FLAG_ACK, len);	//Send separately
 				len = 0;			//Reset length counter
 			}
 			
@@ -154,7 +173,7 @@ uint16_t http_page_relay(char* buf, int card){
 		}else
 		if(ctrl & RELAY_CTRL_SENSOR){	//add form for choosing sensor and values
 			
-			tcp_send(len, 2);	//Send separately
+			tcp_send(_socket, TCP_FLAG_ACK, len);	//Send separately
 			len = 0;			//Reset length counter
 			
 			len += sprintf_P((buf + len), PSTR("<form method=\"get\" action=\"FormRelaySensor\"><td style=\"min-width:360px\">"));
@@ -179,7 +198,7 @@ uint16_t http_page_relay(char* buf, int card){
 		}else
 		if(ctrl & RELAY_CTRL_TIMER){
 			
-			tcp_send(len, 2);	//Send separately
+			tcp_send(_socket, TCP_FLAG_ACK, len);	//Send separately
 			len = 0;			//Reset length counter
 			
 			len += sprintf_P((buf + len), PSTR("<form method=\"get\" action=\"FormRelayTimer\"><td>"));
@@ -207,22 +226,23 @@ uint16_t http_page_relay(char* buf, int card){
 		len += sprintf_P((buf + len), PSTR("</td></form></tr>"));
 		
 		if((relay < 7)){
-			tcp_send(len, 2);	//Send every row separately in the table
+			tcp_send(_socket, TCP_FLAG_ACK, len);	//Send every row separately in the table
 			len = 0;			//Reset length counter			
 		}
 
 	}
 	
 	len += sprintf_P((buf + len), PSTR("</table>"));
-	tcp_send(len, 2);	//Send every row separately in the table
+	tcp_send(_socket, TCP_FLAG_ACK, len);	//Send every row separately in the table
 	len = 0;			//Reset length counter		
 		
 	return len;
 }
 
 
-
-//Page 1=main, 2=time, 3=sensor, 4=card1, 5=card2, 6=card3
+/*
+ * Page 1=main, 2=time, 3=sensor, 4=card1, 5=card2, 6=card3
+ */
 void http_send_page(char* buf, int page){
 	
 	uint16_t len = 0;
@@ -249,7 +269,7 @@ void http_send_page(char* buf, int page){
 	len += sprintf_P((buf + len), PSTR("<a href=\"Relay3.html\">Relay Card3</a><br/>"));
 	len += sprintf_P((buf + len), PSTR("</p></td><td style=\"padding:25;background-color:#EBF4FA;vertical-align:top\">"));
 	
-	tcp_send(len, 2);	//Send first part of the page
+	tcp_send(_socket, TCP_FLAG_ACK, len);	//Send first part of the page
 	len = 0;			//Reset length counter
 	
 	//Page content starts here
@@ -272,32 +292,51 @@ void http_send_page(char* buf, int page){
 	len += sprintf_P((buf + len), PSTR("</td></tr>"));
 	len += sprintf_P((buf + len), PSTR("</table></body></html>"));
 	
-	tcp_send(len, 3);	//Send final part of the page (FIN)
+	tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, len);	//Send final part of the page (FIN)
 }
 
-void http_send_login(char* buf){
+
+/*
+ *
+ */
+void http_send_login(char* buf, uint8_t type){
 	
 	uint16_t len = 0;
 	
 	len += sprintf_P((buf + len), PSTR("<html><head></head>"));
-	len += sprintf_P((buf + len), PSTR("<body style=\"margin:0\">"));
-	len += sprintf_P((buf + len), PSTR("<table style=\"height:100%%;width:100%%;background-color:#EBF4FA\">"));
-	len += sprintf_P((buf + len), PSTR("<tr style=\"text-align:center\">"));
-	len += sprintf_P((buf + len), PSTR("<form method=\"post\" action=\"login\"><td>"));
-	len += sprintf_P((buf + len), PSTR("<td><h1>NetController</h1><br/>Just click Login...<br/>"));
-	len += sprintf_P((buf + len), PSTR("<b>Password:</b>"));
-	len += sprintf_P((buf + len), PSTR("<input type=\"password\" name=\"pwd\" />"));
-	len += sprintf_P((buf + len), PSTR("<input type=\"submit\" value=\"Login\" />"));
-	len += sprintf_P((buf + len), PSTR("</td></form></tr></table></body></html>"));
-	tcp_send(len, 3);	//Send final part of the page (FIN)
+	len += sprintf_P((buf + len), PSTR("<body style=\"margin:0;background-color:#EBF4FA;\">"));
+	len += sprintf_P((buf + len), PSTR("<div style=\"width:100%%;padding-top:10%%;text-align:center;\">"));
+	len += sprintf_P((buf + len), PSTR("<h1>NetController</h1>admin:salasana"));
+	len += sprintf_P((buf + len), PSTR("<table style=\"margin:auto;\"><tr><td>"));
+	len += sprintf_P((buf + len), PSTR("<table><form method=\"post\" action=\"login\"><tr>"));
+	len += sprintf_P((buf + len), PSTR("<td align=\"right\"><b>User:</b><input type=\"text\" name=\"usr\" /></td>"));
+	len += sprintf_P((buf + len), PSTR("</tr><tr>"));
+	len += sprintf_P((buf + len), PSTR("<td align=\"right\"><b>Password:</b><input type=\"password\" name=\"pwd\" /></td>"));
+	len += sprintf_P((buf + len), PSTR("<td><input type=\"submit\" value=\"Login\" /></td>"));
+	len += sprintf_P((buf + len), PSTR("</tr></form></table>"));
+	
+	if(type == 1){
+		len += sprintf_P((buf + len), PSTR("Invalid username or password."));	
+	}
+	
+	len += sprintf_P((buf + len), PSTR("</body></html>"));	
+	
+	sprintf_P(lcd_buf_l1, PSTR("HTTP:%u.%u.%u.%u"), _socket->dest_ip[0], _socket->dest_ip[1], _socket->dest_ip[2], _socket->dest_ip[3]);
+	lcd_write_buffer(lcd_buf_l1, NULL);
+	
+	tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, len);	//Send final part of the page (FIN)
 }
 
-uint16_t http_header_len(uint16_t len, const uint8_t* packet){
+
+/*
+ *
+ */
+uint16_t http_header_len(const uint8_t* packet, uint16_t pkt_len){
 	
 	uint16_t hlen = 0;
 	uint8_t end_flag = 0;
 	
-	while(hlen < len){
+	while(hlen < pkt_len){
 		
 		if((packet[hlen] == '\r') && (packet[hlen + 1] == '\n')){
 			end_flag++;
@@ -314,6 +353,9 @@ uint16_t http_header_len(uint16_t len, const uint8_t* packet){
 }
 
 
+/*
+ *
+ */
 int http_form_handler(const char* packet){
 	
 	char* ptr = 0;
@@ -479,12 +521,22 @@ int http_form_handler(const char* packet){
 			return (card + 4);
 			
 		}
-		
 	}
-	
 	return -1;	//Page not found
-	
 }
+
+
+/*
+ *
+ */
+int http_parse_login(char* message, uint16_t msg_len, char* usr, char* pwd){
+	
+	snprintf(lcd_buf_l1, 16, message);
+	sprintf(lcd_buf_l2, "Len: %u", msg_len);
+	lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+	return 0;
+}
+
 
 const char uri0[] PROGMEM = "/ ";
 const char uri1[] PROGMEM = "/NetController.html";
@@ -495,32 +547,70 @@ const char uri5[] PROGMEM = "/Relay2.html";
 const char uri6[] PROGMEM = "/Relay3.html";
 const char* uris[] PROGMEM = {uri0, uri1, uri2, uri3, uri4, uri5, uri6};
 
-void http_recv(uint16_t len, const char* packet){
+
+/*
+ *
+ */
+void http_recv(uint8_t* packet, uint16_t pkt_len, struct tcp_socket* socket){
 	
-	/*
-	char* reply = (char *)(eth_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + TCP_HEADER_SIZE);
+	_socket = socket;	//Set current socket
+	
+	char* reply = (char *)(_network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + TCP_HEADER_SIZE);
 	uint16_t reply_len = 0;
 	//uint16_t hlen = 0;
-	//static uint8_t post_flag = 0;
+	static uint8_t post_flag = 0;
 
 	
-	if(!strncmp_P(packet, PSTR("GET "), 4)){
+	//Handle POST from login
+	if(post_flag || !strncmp_P((char*)packet, PSTR("POST "), 5)){
+		
+		/*
+		uint16_t hlen = http_header_len(packet, pkt_len);
+		//Check if some of the header is missing
+		if(hlen == pkt_len){
+			post_flag = 1;	//Wait subsequent packet
+			tcp_send(_socket, TCP_FLAG_ACK, 0);
+			return 0;
+		}
+		post_flag = 0;
+		*/
+		//char user[32] = "admin";
+		//char pwd[32] = "salasana";
+		
+		//if(http_parse_login((char*)(packet + hlen), pkt_len - hlen, user, pwd)){
+		//	return 0;
+		//}
+		
+		
+		
+		//sprintf_P(lcd_buf_l1, PSTR("User: %s"), user);
+		//sprintf_P(lcd_buf_l2, PSTR("Pwd: %s"), pwd);
+		//lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+		
+		reply_len += sprintf_P(reply, PSTR("HTTP/1.1 303 See Other\r\nContent-Type: text/html\r\nLocation: /NetController.html\r\n\r\n"));
+		tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
+		return;
+	}
+	
+	if(!strncmp_P((char*)packet, PSTR("GET "), 4)){
 
 		int req_page = -1;
 		
 		//Check if page URI
 		for(int i = 0; i < 7; i++){
 			char* str = (char*)pgm_read_word(&uris[i]);	//Read pointer to the URI string from the program memory
-			if(!strncmp_P((packet + 4), str, strlen_P(str))){
+			if(!strncmp_P((char*)(packet + 4), str, strlen_P(str))){
 				req_page = i;
 				break;
 			}
 		}
 		if(req_page >= 0){	//URI found -> send OK and page
 			reply_len += sprintf_P(reply, PSTR("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nRefresh: 60\r\n\r\n"));
-			tcp_send(reply_len, 2);				//Send http header first
+			tcp_send(_socket, TCP_FLAG_ACK, reply_len);				//Send http header first
 			if(req_page == 0){
-				http_send_login(reply);		//Send login page
+				//sprintf_P(lcd_buf_l1, PSTR("HTTP: send login"));
+				//lcd_write_buffer(lcd_buf_l1, NULL);
+				http_send_login(reply, 0);		//Send login page
 			}else{
 				http_send_page(reply, req_page);	//Send web page
 			}
@@ -528,28 +618,20 @@ void http_recv(uint16_t len, const char* packet){
 		}
 		
 		//Check if form URI
-		if(!strncmp_P((packet + 4), PSTR("/Form"), 5)){	//Card1 page
-			req_page = http_form_handler(packet + 4);	//Return the page where the client will be redirected
+		if(!strncmp_P((char*)(packet + 4), PSTR("/Form"), 5)){	//Card1 page
+			req_page = http_form_handler((char*)(packet + 4));	//Return the page where the client will be redirected
 		}
 		if(req_page >= 0){	//URI found -> redirect
 			reply_len += sprintf_P(reply, PSTR("HTTP/1.1 303 See Other\r\nContent-Type: text/html\r\nLocation: "));
 			reply_len += sprintf_P((reply + reply_len), (char*)pgm_read_word(&uris[req_page]));
 			reply_len += sprintf_P((reply + reply_len), PSTR("\r\n\r\n"));
-			tcp_send(reply_len, 3);
+			tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
 			return;
 		}
 		
 		//URI not found
 		reply_len += sprintf_P(reply, PSTR("HTTP/1.1 404 Not Found\r\n\r\n"));
-		tcp_send(reply_len, 3);
+		tcp_send(_socket, TCP_FLAG_FIN | TCP_FLAG_ACK, reply_len);
 		return;
-	}else
-	if(!strncmp_P(packet, PSTR("POST "), 5)){
-		
-		reply_len += sprintf_P(reply, PSTR("HTTP/1.1 303 See Other\r\nContent-Type: text/html\r\nLocation: /NetController.html\r\n\r\n"));
-		tcp_send(reply_len, 3);
-		return;
-		
 	}
-	*/
 }
