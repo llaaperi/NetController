@@ -16,7 +16,12 @@
 	#include "enc28j60.h"
 #endif
 
+#include <stdio.h>
+#include <avr/pgmspace.h>
+#include "../lcd.h"
+
 #include "network.h"
+#include "tcp.h"
 #include "eth.h"
 
 //Network addresses on EEPROM
@@ -55,6 +60,9 @@ void network_recv(){
 	}
 	
 	eth_recv(_network_buf, pkt_len);
+	
+	//Handle tcp timeouts
+	tcp_timeout_handler();
 }
 
 

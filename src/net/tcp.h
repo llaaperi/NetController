@@ -42,6 +42,7 @@
 #define TCP_PORT_HTTP 80
 
 #include <stdint.h>
+#include "../time.h"
 
 struct tcp_header{
 	uint16_t src_port;
@@ -66,6 +67,7 @@ struct tcp_socket{
 	uint32_t ack;
 	uint16_t dest_port;
 	uint8_t dest_ip[4];
+	struct clockval timer;
 };
 
 
@@ -79,5 +81,11 @@ void tcp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr);
  *
  */
 void tcp_send(struct tcp_socket* socket, uint8_t type, uint16_t pkt_len);
+
+
+/*
+ *
+ */
+void tcp_timeout_handler();
 
 #endif /* TCP_H */

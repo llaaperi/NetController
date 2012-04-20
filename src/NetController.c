@@ -87,7 +87,7 @@ int main(void){
 		if(timer_get_elapsed(&lcd_timer) >= 200){	//Refresh LCD every 200ms
 			//ui_refresh_display();	
 			timer_start(&lcd_timer);	//Reset LCD timer
-		}		
+		}
 	}
 	
 	return 0;

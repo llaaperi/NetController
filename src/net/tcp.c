@@ -22,7 +22,6 @@
 struct tcp_socket _sockets[TCP_MAX_CONN];
 struct tcp_header _tcp_header;
 
-
 /*
  *
  */
@@ -47,6 +46,36 @@ int get_free_socket(){
 		}
 	}
 	return -1;
+}
+
+
+/*
+ * Get number of active sockets
+ */
+int tcp_get_active_sockets(){
+	
+	int i, res = 0;
+	for(i = 0; i < TCP_MAX_CONN; i++){
+		if(_sockets[i].active){
+			res++;
+		}
+	}
+	return res;
+}
+
+
+/*
+ *
+ */
+void tcp_timeout_handler(){
+
+	int i;
+	for(i = 0; i < TCP_MAX_CONN; i++){
+		if(timer_get_elapsed(&(_sockets[i].timer)) >= 300000){	//Reset socket if it has been active over 5 minutes
+			_sockets[i].active = 0;
+			//tcp_send(&_sockets[i], TCP_FLAG_RST, 0);	//Type RST, data length 0
+		}
+	}
 }
 
 
@@ -133,99 +162,6 @@ uint16_t tcp_chc(uint16_t len, const uint8_t* data, const uint8_t* dest_ip){
 
 
 /*
- * Fill TCP header.
- * Return length of the packet
- */
-/*
-uint16_t tcp_fill_header(struct tcp_socket* socket, uint8_t type, uint16_t data_len){
-
-	uint8_t* header = _network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE;
-	uint16_t pkt_len = TCP_HEADER_SIZE + data_len;	//Init length only to header
-	
-	header[TCP_H_SRC] = (TCP_PORT_HTTP >> 8);		//Source port (80)
-	header[TCP_H_SRC + 1] = (TCP_PORT_HTTP & 0xFF);
-	
-	header[TCP_H_DST] = (socket->dest_port >> 8);	//Destination port
-	header[TCP_H_DST + 1] = (socket->dest_port & 0xFF);	
-	
-	header[TCP_H_SEQ] = (socket->seq >> 24);
-	header[TCP_H_SEQ + 1] = (socket->seq >> 16);
-	header[TCP_H_SEQ + 2] = (socket->seq >> 8);
-	header[TCP_H_SEQ + 3] = (socket->seq);
-	
-	header[TCP_H_ACK] = (socket->ack >> 24);
-	header[TCP_H_ACK + 1] = (socket->ack >> 16);
-	header[TCP_H_ACK + 2] = (socket->ack >> 8);
-	header[TCP_H_ACK + 3] = (socket->ack);
-	
-	header[TCP_H_OFFSET] = TCP_OFFSET;			//Header length with no options
-	
-	//Set flags
-	if(type == 1){ //SYN ACK
-		header[TCP_H_OFFSET] = 0x60;			//Header length with one option
-		header[TCP_H_FLAGS] = TCP_FLAG_SYN | TCP_FLAG_ACK;
-		
-		//uint16_t max_seg_size = ETH_BUF_SIZE - ETH_HEADER_SIZE - IP_HEADER_SIZE - TCP_HEADER_SIZE;
-		header[TCP_H_OPT] = 0x02;
-		header[TCP_H_OPT + 1] = 0x04;
-		//header[TCP_H_OPT + 2] = (max_seg_size>>8);
-		//header[TCP_H_OPT + 3] = (max_seg_size & 0xFF);
-		header[TCP_H_OPT + 2] = (TCP_MAX_SEG_SIZE >> 8);
-		header[TCP_H_OPT + 3] = (TCP_MAX_SEG_SIZE & 0xFF);
-		
-		socket->seq += 1;
-		pkt_len += 4;	//Set packet length to contain only header and extra option
-	}else
-	if(type == 2){	//ACK
-		header[TCP_H_FLAGS] = TCP_FLAG_ACK;
-	}else
-	if(type == 3){	//FIN
-		header[TCP_H_FLAGS] = TCP_FLAG_ACK | TCP_FLAG_PSH | TCP_FLAG_FIN;
-		socket->seq += 1;
-	}else
-	if(type == 4){
-		header[TCP_H_FLAGS] = TCP_FLAG_PSH;
-	}else
-	if(type == 5){
-		header[TCP_H_FLAGS] = TCP_FLAG_RST;
-	}
-	
-	//uint16_t window_size = ETH_BUF_SIZE - ETH_HEADER_SIZE - IP_HEADER_SIZE - TCP_HEADER_SIZE;
-	header[TCP_H_WSIZE] = TCP_WINDOW_SIZE >> 8;
-	header[TCP_H_WSIZE + 1] = (TCP_WINDOW_SIZE & 0xFF);
-	
-	header[TCP_H_CHC] = 0x00;			//Zero checksum before calculation
-	header[TCP_H_CHC + 1] = 0x00;
-	
-	header[TCP_H_URG] = 0x00;
-	header[TCP_H_URG + 1] = 0x00;
-	
-	uint16_t chc = tcp_chc(pkt_len, header, socket->dest_ip);
-	header[TCP_H_CHC] = (chc >> 8);						//Add valid checksum
-	header[TCP_H_CHC + 1] = (chc & 0xFF);
-	
-	return pkt_len;
-}
-*/
-
-/*
- *
- */
-/*
-uint32_t tcp_parse_seq(uint8_t* header){
-	
-	uint32_t seq = header[TCP_H_SEQ];
-	seq <<= 8;
-	seq |= header[TCP_H_SEQ + 1];
-	seq <<= 8;
-	seq |= header[TCP_H_SEQ + 2];
-	seq <<= 8;
-	seq |= header[TCP_H_SEQ + 3];
-	return seq;
-}
-*/
-
-/*
  *
  */
 int tcp_parse_header(struct tcp_header* header, uint8_t* packet, uint16_t pkt_len){
@@ -297,6 +233,7 @@ void tcp_recv_syn(struct tcp_header* header, uint8_t* src_ip_addr){
 	//lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 	
 	socket->active = 1;	//Mark socket as active
+	timer_start(&socket->timer);
 	socket->handshake = 0;	//Mark handshake incomplete
 	
 	socket->seq = rand_seq();		//Reset sequence number
