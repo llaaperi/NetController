@@ -23,8 +23,10 @@ HEX_EEPROM_FLAGS = -j .eeprom
 HEX_EEPROM_FLAGS += --set-section-flags=.eeprom="alloc,load"
 HEX_EEPROM_FLAGS += --change-section-lma .eeprom=0 --no-change-warnings
 
-
-OBJECTS = NetController.o NetControllerUI.o net/arp.o ds1820.o net/enc28j60.o net/eth.o net/http.o net/icmp.o net/ip.o keypad.o lcd.o net/network.o relay.o net/tcp.o time.o twi.o 
+# For TCP
+#OBJECTS = NetController.o NetControllerUI.o net/arp.o ds1820.o net/enc28j60.o net/eth.o net/http.o net/icmp.o net/ip.o keypad.o lcd.o net/network.o relay.o net/tcp.o time.o twi.o
+# For UDP 
+OBJECTS = NetController.o NetControllerUI.o net/arp.o ds1820.o net/enc28j60.o net/eth.o net/icmp.o net/ip.o keypad.o lcd.o net/network.o relay.o net/udp.o time.o twi.o 
 COBJECTS = $(addprefix $(OBJDIR)/, $(OBJECTS))
 TARGETS = $(PROJECT).elf $(PROJECT).hex $(PROJECT).eep $(PROJECT).lss
 CTARGETS = $(addprefix $(BINDIR)/, $(TARGETS))

@@ -98,17 +98,19 @@ void ip_recv(uint8_t* packet, uint16_t pkt_len){
 		return;
 	}
 	
+    //DISABLED, MUST BE UNCOMMENTED FROM IP.H
 	//Handle TCP packets
 	if(packet[IP_H_PROT] == IP_PROT_TCP){
 		//sprintf(lcd_buf_l1, "TCP");
 		//sprintf(lcd_buf_l2, "len %u", payload_len);
 		//lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-		tcp_recv(_ip_header.payload, _ip_header.payload_len, _ip_header.src_ip);
+		//tcp_recv(_ip_header.payload, _ip_header.payload_len, _ip_header.src_ip);
 		return;
 	}
 	
 	//Handle UDP packets
 	if(packet[IP_H_PROT] == IP_PROT_UDP){
+        udp_recv(_ip_header.payload, _ip_header.payload_len, _ip_header.src_ip);
 		return;
 	}
 }

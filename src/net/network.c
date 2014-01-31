@@ -62,7 +62,7 @@ void network_recv(){
 	eth_recv(_network_buf, pkt_len);
 	
 	//Handle tcp timeouts
-	tcp_timeout_handler();
+	//tcp_timeout_handler();
 }
 
 
