@@ -545,7 +545,7 @@ const char uri3[] PROGMEM = "/Sensor.html";
 const char uri4[] PROGMEM = "/Relay1.html";
 const char uri5[] PROGMEM = "/Relay2.html";
 const char uri6[] PROGMEM = "/Relay3.html";
-const char* uris[] PROGMEM = {uri0, uri1, uri2, uri3, uri4, uri5, uri6};
+const char* uris[] = {uri0, uri1, uri2, uri3, uri4, uri5, uri6};
 
 /*
  *
