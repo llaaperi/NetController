@@ -88,7 +88,7 @@ static inline void disp_default(){
  */
 void ui_init(){
     _display = 0;   //Default display
-    //disp_default();
+    disp_default();
 }
 
 
