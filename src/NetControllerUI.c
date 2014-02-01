@@ -21,6 +21,10 @@
 #include "time.h"
 #include "net/network.h"
 
+static inline void disp_refresh(){
+    lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+}
+
 
 /*
  *
@@ -79,6 +83,14 @@ static inline void disp_default(){
 	lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 }
 
+/*
+ *
+ */
+void ui_init(){
+    _display = 0;   //Default display
+    //disp_default();
+}
+
 
 /*
  *
@@ -105,8 +117,167 @@ void ui_refresh_display(){
 	}
 }
 
+void change_addr_mac(){
+    
+    char key = 0;
+    
+    sprintf_P(lcd_buf_l1, PSTR("New MAC"));
+    sprintf_P(lcd_buf_l2, PSTR("%02x%02x%02x%02x%02x%02x"), _network_mac_addr[0], _network_mac_addr[1], _network_mac_addr[2], _network_mac_addr[3], _network_mac_addr[4], _network_mac_addr[5]);
+    lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+    
+    unsigned int idx = 0;
+    do{
+        key = keypad_get_input();   //Note that this is blockin function
+        
+        //TODO: implement a-f
+        if((key >= '0') && (key <= '9')){
+            
+            lcd_buf_l2[idx++] = key;
+            
+            if(idx == 12){	//Stay on last character
+                idx--;
+            }
+        }
+        
+        //Disp can be refreshed directly because keys are read with blocking function
+        disp_refresh();
+        
+        //Cancel without changes
+        if(key == 'C'){
+            return;
+        }
+        
+    }while(key != 'A');
+    
+    sscanf_P(lcd_buf_l2, PSTR("%2x%2x%2x%2x%2x%2x"), _network_mac_addr, _network_mac_addr+1, _network_mac_addr+2, _network_mac_addr+3, _network_mac_addr+4, _network_mac_addr+5);	//Read user given data
+}
 
-/*
+
+/**
+ *
+ */
+void change_addr_ip(){
+    
+    char key = 0;
+    
+    sprintf_P(lcd_buf_l1, PSTR("New IP"));
+    sprintf_P(lcd_buf_l2, PSTR("%03d.%03d.%03d.%03d"), _network_ip_addr[0], _network_ip_addr[1], _network_ip_addr[2], _network_ip_addr[3]);
+    lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+    
+    unsigned int idx = 0;
+    do{
+        key = keypad_get_input();   //Note that this is blockin function
+        
+        if((key >= '0') && (key <= '9')){
+            
+            lcd_buf_l2[idx++] = key;
+            
+            if(idx == 15){	//Stay on last character
+                idx--;
+            }
+            
+            if(idx == 3 || idx == 7 || idx == 11){	//Jump over periods
+                idx++;
+            }
+            
+        }
+        
+        //Disp can be refreshed directly because keys are read with blocking function
+        disp_refresh();
+        
+        //Cancel without changes
+        if(key == 'C'){
+            return;
+        }
+        
+    }while(key != 'A');
+    
+    sscanf_P(lcd_buf_l2, PSTR("%u.%u.%u.%u"), _network_ip_addr, _network_ip_addr+1, _network_ip_addr+2, _network_ip_addr+3);	//Read user given data
+    
+}
+
+
+/**
+ *
+ */
+void change_addr(){
+    
+    char key = 0;
+    
+    sprintf_P(lcd_buf_l1, PSTR("Select address"));
+    sprintf_P(lcd_buf_l2, PSTR("1=MAC, 2=IP"));
+    lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+    
+    key = keypad_get_input();
+    
+    if(key == '1'){
+        change_addr_mac();
+        return;
+    }
+    
+    if(key == '2'){
+        change_addr_ip();
+        return;
+    }
+    
+    //Cancel
+    if(key == 'C'){
+        return;
+    }
+}
+
+
+/**
+ *
+ */
+void change_time(){
+    
+    char key = 0;
+    
+    sprintf_P(lcd_buf_l1, PSTR("Set time"));
+    sprintf_P(lcd_buf_l2, PSTR("%02u:%02u:%02u"), _time_h, _time_m, _time_s);
+    lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
+    
+    unsigned int idx = 0;
+    do{
+        key = keypad_get_input();   //Note that this is blockin function
+        
+        if((key >= '0') && (key <= '9')){
+            
+            lcd_buf_l2[idx++] = key;
+            
+            if(idx == 8){	//Stay on last character
+                idx--;
+            }
+            
+            if(idx == 2 || idx == 5){	//Jump over colons
+                idx++;
+            }
+            
+        }
+        
+        //Disp can be refreshed directly because keys are read with blocking function
+        disp_refresh();
+        
+        //Cancel without changes
+        if(key == 'C'){
+            return;
+        }
+        
+    }while(key != 'A');
+    
+    unsigned int h = 0, m = 0, s = 0;
+    sscanf_P(lcd_buf_l2, PSTR("%u:%u:%u"), &h, &m, &s);	//Read user given data
+    
+    if((h < 24) && (m < 60) && (s < 60)){	//Check that input is valid
+        _time_h = h;
+        _time_m = m;
+        _time_s = s;
+    }
+}
+
+
+/**
  *
  */
 void ui_control_menu(){
@@ -117,81 +288,27 @@ void ui_control_menu(){
 	sprintf_P(lcd_buf_l2, PSTR("1=Addr, 2=Clock, 0=Cancel"));
 	lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 	
-	do{
-		key = keypad_get();
-	}while(!((key >= '0') && (key <= '2')));
+    key = keypad_get_input();
 	
 	if(key == '1'){
-		
-		sprintf_P(lcd_buf_l1, PSTR("Select address"));
-		sprintf_P(lcd_buf_l2, PSTR("1=MAC, 2=IP"));
-		lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-		
-		do{
-			key = keypad_get();
-		}while((key != '1') && (key != '2'));
-		
-		if(key == '1'){
-			sprintf_P(lcd_buf_l1, PSTR("New MAC"));
-			sprintf_P(lcd_buf_l2, PSTR(" "));
-			lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-		}else
-			if(key == '2'){
-				sprintf_P(lcd_buf_l1, PSTR("New IP"));
-				sprintf_P(lcd_buf_l2, PSTR(" "));
-				lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-			}
-		
-	}else
-		if(key == '2'){
-			sprintf_P(lcd_buf_l1, PSTR("Set clock"));
-			//sprintf_P(lcd_buf_l2, PSTR("%02u:%02u:%02u"), time_h, time_m, time_s);
-			lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-			
-			unsigned int idx = 0;
-			do{
-				key = keypad_get();
-				
-				if((key >= '0') && (key <= '9')){
-					
-					lcd_buf_l2[idx++] = key;
-					
-					if(idx == 8){	//Stay on last character
-						idx--;
-					}
-					
-					if(idx == 2 || idx == 5){	//Jump over colons
-						idx++;
-					}
-					
-				}
-				
-				/*
-				if(lcd_timer_flag){
-					lcd_timer_flag = 0;
-					lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-				}*/
-				
-			}while(key != 'A');
-			
-			unsigned int h = 0, m = 0, s = 0;
-			sscanf_P(lcd_buf_l2, PSTR("%u:%u:%u"), &h, &m, &s);	//Read user given data
-			
-			if((h < 24) && (m < 60) && (s < 60)){	//Check that input is valid
-				//time_h = h;
-				//time_m = m;
-				//time_s = s;	
-			}
-		}
-	
+        //Support only IP changing for now
+        change_addr_ip();
+        //change_addr();
+        return;
+	}
+    
+    if(key == '2'){
+        change_time();
+        return;
+    }
 }
 
 
-/*
+/**
  *
  */
 void ui_key_pressed(char key){
-	
+    
 	if(key == 'A'){
 		//ui_relay_menu();
 		return;

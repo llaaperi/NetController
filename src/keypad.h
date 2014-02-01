@@ -22,6 +22,11 @@ void keypad_init();
 
 char keypad_get();
 
+/*
+ * This is blocking version of keypad_get()
+ */
+char keypad_get_input();
+
 ISR(INT0_vect);
 
 #endif /* KEYPAD_H_ */

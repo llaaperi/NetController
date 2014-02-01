@@ -57,7 +57,10 @@ int main(void){
 	
 	state(OK);
 	
-	//relay_set_sensor(0,0,0,1,282);
+    //Init UI
+	ui_init();
+    
+    //relay_set_sensor(0,0,0,1,282);
 	
 	char key = 0;
 	struct clockval lcd_timer, tmp_timer;
@@ -85,7 +88,7 @@ int main(void){
 		
 		/*Refresh LCD*/
 		if(timer_get_elapsed(&lcd_timer) >= 200){	//Refresh LCD every 200ms
-			//ui_refresh_display();	
+			ui_refresh_display();
 			timer_start(&lcd_timer);	//Reset LCD timer
 		}
 	}

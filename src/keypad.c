@@ -63,6 +63,9 @@ char keypad_get_key(){
 }
 
 
+/**
+ *
+ */
 char keypad_get(){
 	
 	char key = 0;
@@ -75,6 +78,19 @@ char keypad_get(){
 	}
 	
 	return key;
+}
+
+
+/**
+ *
+ */
+char keypad_get_input(){
+    char key = 0;
+    while(!key){
+        key = keypad_get();
+    }
+    _delay_ms(200); //User is slow
+    return key;
 }
 
 

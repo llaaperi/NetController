@@ -13,6 +13,7 @@
 
 uint8_t _display;
 
+void ui_init();
 void ui_key_pressed(char key);
 void ui_refresh_display();
 

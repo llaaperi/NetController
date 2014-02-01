@@ -26,7 +26,7 @@
 
 //Network addresses on EEPROM
 uint8_t EEMEM _eeprom_mac_addr[6] = {0x00, 0xFA, 0x20, 0xFA, 0x47, 0x31};
-uint8_t EEMEM _eeprom_ip_addr[4] = {10, 0, 0, 5};
+uint8_t EEMEM _eeprom_ip_addr[4] = {10, 0, 0, 99};
 
 //Runtime network addresses (used within net)
 uint8_t _network_mac_addr[6] = {0,0,0,0,0,0};
