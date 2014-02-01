@@ -18,13 +18,7 @@
 /*
  *
  */
-void ncp_recv(struct udp_socket* socket, uint8_t* packet, uint16_t pkt_len);
-
-
-/*
- *
- */
-void ncp_send(struct udp_socket* socket, uint8_t type, uint16_t pkt_len);
+int ncp_recv(uint8_t* packet, uint16_t pkt_len);
 
 
 #endif /* NCP_H */

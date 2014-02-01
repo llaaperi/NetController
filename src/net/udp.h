@@ -32,8 +32,8 @@ struct udp_header{
 
 
 struct udp_socket{
-	uint16_t dest_port;
-	uint8_t dest_ip[4];
+	uint16_t dst_port;
+	uint8_t dst_ip[4];
 };
 
 
@@ -46,7 +46,7 @@ void udp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr);
 /*
  *
  */
-void udp_send(struct udp_socket* socket, uint8_t type, uint16_t pkt_len);
+void udp_send(struct udp_socket* socket, uint16_t pkt_len);
 
 
 #endif /* UDP_H */
