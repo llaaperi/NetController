@@ -75,14 +75,30 @@ int parse_header(struct udp_header* header, uint8_t* packet, uint16_t pkt_len){
 }
 
 
+static inline void write_header(struct udp_socket* socket, uint16_t pkt_len){
+    uint8_t* packet = _network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE;
+    
+    packet[UDP_H_SRC] = (UDP_PORT_NCP >> 8);		//Source port
+	packet[UDP_H_SRC + 1] = (UDP_PORT_NCP & 0xFF);
+	
+	packet[UDP_H_DST] = (socket->dst_port >> 8);	//Destination port
+	packet[UDP_H_DST + 1] = (socket->dst_port & 0xFF);
+    
+    packet[UDP_H_LEN] = ((pkt_len + UDP_HEADER_SIZE) >> 8);   //Packet length (header + payload)
+    packet[UDP_H_LEN + 1] = ((pkt_len + UDP_HEADER_SIZE) & 0xFF);
+    
+    packet[UDP_H_CHC] = 0x00;
+    packet[UDP_H_CHC + 1] = 0x00;
+}
+
 /*
  *
  */
-void udp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr){
+int udp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr){
     
     //Parse header
     if(!parse_header(&_header, packet, pkt_len)){
-        return;
+        return -1;
     }
     
     init_socket(&_socket, src_ip_addr, _header.src_port);
@@ -99,8 +115,10 @@ void udp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr){
     }
     
     if(reply_len >= 0){   //Reply (allow zero length payload)
-        udp_send(&_socket, (uint16_t)reply_len);
+        write_header(&_socket, (uint16_t)reply_len);
     }
+    
+    return UDP_HEADER_SIZE + reply_len;
 }
 
 
@@ -109,19 +127,7 @@ void udp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr){
  */
 void udp_send(struct udp_socket* socket, uint16_t pkt_len){
     
-    uint8_t* packet = _network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE;
-    
-    packet[UDP_H_SRC] = (UDP_PORT_NCP >> 8);		//Source port
-	packet[UDP_H_SRC + 1] = (UDP_PORT_NCP & 0xFF);
-	
-	packet[UDP_H_DST] = (socket->dst_port >> 8);	//Destination port
-	packet[UDP_H_DST + 1] = (socket->dst_port & 0xFF);
-    
-    packet[UDP_H_LEN] = ((pkt_len + UDP_HEADER_SIZE) >> 8);   //Packet length (header + payload)
-    packet[UDP_H_LEN + 1] = ((pkt_len + UDP_HEADER_SIZE) & 0xFF);
-    
-    packet[UDP_H_CHC] = 0x00;
-    packet[UDP_H_CHC + 1] = 0x00;
+    write_header(socket, pkt_len);
     
     //sprintf_P(lcd_buf_l1, PSTR("src:%u"), socket->dst_port);
     //sprintf_P(lcd_buf_l2, PSTR("dst:%u"), socket->dst_port);

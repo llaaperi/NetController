@@ -18,6 +18,7 @@
 #include "keypad.h"
 #include "lcd.h"
 #include "relay.h"
+#include "ds1820.h"
 #include "time.h"
 #include "net/network.h"
 
@@ -35,14 +36,13 @@ static inline void disp_temp(){
 	
 	sprintf_P(lcd_buf_l1, PSTR("Temp t1, t2, t3"));
 	
-	//idx += ds1820_tprint(lcd_buf_l2 + idx, ds1820_temps[0]);
+	idx += ds1820_print_temp(lcd_buf_l2 + idx, ds1820_get_cur(0));
 	idx += sprintf_P(lcd_buf_l2 + idx, PSTR(" "));
-	//idx += ds1820_tprint(lcd_buf_l2 + idx, ds1820_temps[1]);
+	idx += ds1820_print_temp(lcd_buf_l2 + idx, ds1820_get_cur(1));
 	idx += sprintf_P(lcd_buf_l2 + idx, PSTR(" "));
-	//idx += ds1820_tprint(lcd_buf_l2 + idx, ds1820_temps[2]);
+	idx += ds1820_print_temp(lcd_buf_l2 + idx, ds1820_get_cur(2));
 	
 	lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
-	
 }
 
 

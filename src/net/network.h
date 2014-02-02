@@ -9,7 +9,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#define NETWORK_BUF_SIZE 1000
+#define NETWORK_BUF_SIZE 800
 
 //Compiler modifications for tests
 #ifdef TEST	//Compiling for test

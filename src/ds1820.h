@@ -38,23 +38,26 @@
 
 #include <stdint.h>
 
+//
 int ds1820_get_cur(int sensor);
 int ds1820_get_min(int sensor);
 int ds1820_get_max(int sensor);
 
-//int ds1820_get_temp(int sensor);
-
-int ds1820_convert(int sensor);
-int ds1820_convert_ready(int sensor);
-int ds1820_get_temp(int sensor);
-
 void ds1820_refresh_all();
-
-void ds1820_reset_temp(int sensor);
-
-int ds1820_set_tag(uint8_t len, const char* tag, int sensor);
 
 int ds1820_print_temp(char* buf, int temp);
 int ds1820_print_tag(char* buf, int sensor);
+
+//int ds1820_get_temp(int sensor);
+
+//int ds1820_convert(int sensor);
+//int ds1820_convert_ready(int sensor);
+//int ds1820_get_temp(int sensor);
+
+
+//void ds1820_reset_temp(int sensor);
+
+//int ds1820_set_tag(uint8_t len, const char* tag, int sensor);
+
 
 #endif /* DS1820_H */

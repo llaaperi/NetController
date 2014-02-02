@@ -32,6 +32,35 @@ int temp_min[3] = {DS1820_TEMP_NONE, DS1820_TEMP_NONE, DS1820_TEMP_NONE};
 int temp_max[3] = {DS1820_TEMP_NONE, DS1820_TEMP_NONE, DS1820_TEMP_NONE};
 
 
+int ds1820_get_cur(int sensor){
+	if((sensor >= 0) && (sensor <= 2)){
+		return temp[sensor];
+	}
+	return DS1820_TEMP_NONE;
+}
+
+int ds1820_get_min(int sensor){
+	if((sensor >= 0) && (sensor <= 2)){
+		return temp_min[sensor];
+	}
+	return DS1820_TEMP_NONE;
+}
+
+int ds1820_get_max(int sensor){
+	if((sensor >= 0) && (sensor <= 2)){
+		return temp_max[sensor];
+	}
+	return DS1820_TEMP_NONE;
+}
+
+void ds1820_reset_temp(int sensor){
+	
+	if((sensor >= 0) && (sensor <= 2)){
+		temp_min[sensor] = temp[sensor];
+		temp_max[sensor] = temp[sensor];
+	}
+}
+
 /*Reset DS1820*/
 uint8_t ds1820_reset(int sensor){
 	
@@ -146,7 +175,9 @@ int ds1820_convert_ready(int sensor){
 }
 
 
-
+/**
+ * Called from ds1820_refrech_all()
+ */
 int ds1820_get_temp(int sensor){
 	
 	uint8_t scratchpad[9];
@@ -187,29 +218,7 @@ int ds1820_get_temp(int sensor){
 
 }
 
-int ds1820_get_cur(int sensor){
-	if((sensor >= 0) && (sensor <= 2)){
-		return temp[sensor];
-	}
-	return DS1820_TEMP_NONE;
-}
-
-int ds1820_get_min(int sensor){
-	if((sensor >= 0) && (sensor <= 2)){
-		return temp_min[sensor];
-	}
-	return DS1820_TEMP_NONE;
-}
-
-int ds1820_get_max(int sensor){
-	if((sensor >= 0) && (sensor <= 2)){
-		return temp_max[sensor];
-	}
-	return DS1820_TEMP_NONE;
-}
-
 void ds1820_refresh_all(){
-	
 	
 	for(int i = 0; i < 3; i++){
 		
@@ -246,15 +255,6 @@ void ds1820_refresh_all(){
 		
 	}
 
-}
-
-void ds1820_reset_temp(int sensor){
-	
-	if((sensor >= 0) && (sensor <= 2)){
-		temp_min[sensor] = temp[sensor];
-		temp_max[sensor] = temp[sensor];
-	}
-	
 }
 
 int ds1820_print_temp(char* buf, int temp){
@@ -310,46 +310,3 @@ int ds1820_set_tag(uint8_t len, const char* tag, int sensor){
 	
 	return len;
 }
-
-
-/*Read temperature from DS1820 and convert it to Celsius*/
-/* Very slow function because conversion takes place first before the sensor value can be read.
-int ds1820_get_temp(int sensor){
-
-	uint8_t scratchpad[9];
-	int temp_val = 0;
-	int temp = 0;
-
-	if(ds1820_reset(sensor)){
-		return DS1820_TEMP_NONE;
-	}	
-	
-	ds1820_write_byte(DS1820_CMD_SKIPROM, sensor);
-	ds1820_write_byte(DS1820_CMD_CONVERTTEMP, sensor);
-	
-	while(ds1820_read_bit(sensor) != 1);					//Wait for conversion ~600ms
-
-	do{
-		ds1820_reset(sensor);
-		ds1820_write_byte(DS1820_CMD_SKIPROM, sensor);
-		ds1820_write_byte(DS1820_CMD_RSCRATCHPAD, sensor);
-		for(int i = 0; i < 9; i++)							//Read scratchpad
-			ds1820_read_byte(&scratchpad[i], sensor);
-		ds1820_reset(sensor);
-	}while(ds1820_crc_check(scratchpad));					//while CRC matches
-
-	//temp = MSB LSB
-	temp_val = scratchpad[0];
-	temp_val |= (scratchpad[1]<<8);
-	temp_val <<= 7;						//keep sign bit
-	temp_val &= 0xFF00;					//clear LSB
-	temp_val -= 0x40;					//subtract 0.25d = 40h
-	temp_val += (((scratchpad[7] - scratchpad[6])<<8) / scratchpad[7]);
-	
-	temp = temp_val >> 8;
-	temp *= 10;
-	temp += (((temp_val & 0x00FF) * 100)>>8) / 10;
-	
-	return temp;
-}
-*/

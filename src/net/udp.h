@@ -40,7 +40,7 @@ struct udp_socket{
 /*
  *
  */
-void udp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr);
+int udp_recv(uint8_t* packet, uint16_t pkt_len, uint8_t* src_ip_addr);
 
 
 /*

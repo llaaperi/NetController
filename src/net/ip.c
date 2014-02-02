@@ -108,10 +108,13 @@ void ip_recv(uint8_t* packet, uint16_t pkt_len){
 		return;
 	}
 	
+    int reply_len = 0;
 	//Handle UDP packets
 	if(packet[IP_H_PROT] == IP_PROT_UDP){
-        udp_recv(_ip_header.payload, _ip_header.payload_len, _ip_header.src_ip);
-		return;
+        reply_len = udp_recv(_ip_header.payload, _ip_header.payload_len, _ip_header.src_ip);
+        if(reply_len >= 0){
+            ip_send(_ip_header.src_ip, IP_PROT_UDP, reply_len); //Reply to source
+        }
 	}
 }
 
