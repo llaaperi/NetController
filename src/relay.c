@@ -61,7 +61,7 @@ char* EEMEM _eeprom_relay_tags[3][8] = {{_eeprom_relay_tag11, _eeprom_relay_tag1
 uint8_t relay_state[3] = {0, 0, 0};	//Current state bytes of the relay cards
 
 
-static char card_to_addr(int card){
+static inline char card_to_addr(int card){
 
 	char addr = 0;
 	

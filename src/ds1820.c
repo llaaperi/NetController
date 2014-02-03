@@ -118,7 +118,7 @@ int ds1820_set_tag(uint8_t len, const char* tag, int sensor){
 
 
 /*Reset DS1820*/
-static inline uint8_t ds1820_reset(int sensor){
+uint8_t ds1820_reset(int sensor){
 	
 	DS1820_DDR |= (1<<sensor);			//output
 	DS1820_PORT &= ~(1<<sensor);		//low
@@ -137,7 +137,7 @@ static inline uint8_t ds1820_reset(int sensor){
 
 
 /*Write one BIT to 1-wire data line*/
-static inline void ds1820_write_bit(uint8_t bit, int sensor){
+void ds1820_write_bit(uint8_t bit, int sensor){
 
 	DS1820_PORT &= ~(1<<sensor);		//low
 	DS1820_DDR |= (1<<sensor);			//output
@@ -154,7 +154,7 @@ static inline void ds1820_write_bit(uint8_t bit, int sensor){
 
 
 /*Read one BIT from 1-wire data line*/
-static inline uint8_t ds1820_read_bit(int sensor){
+uint8_t ds1820_read_bit(int sensor){
 
 	DS1820_PORT &= ~(1<<sensor);		//low
 	DS1820_DDR |= (1<<sensor);			//output
@@ -174,7 +174,7 @@ static inline uint8_t ds1820_read_bit(int sensor){
 
 
 /*Write one BYTE to 1-wire data line*/
-static inline void ds1820_write_byte(uint8_t byte, int sensor){
+void ds1820_write_byte(uint8_t byte, int sensor){
 
 	for(int i = 0; i < 8; i++){
 		ds1820_write_bit((byte & (1<<i)), sensor);
@@ -184,7 +184,7 @@ static inline void ds1820_write_byte(uint8_t byte, int sensor){
 
 
 /*Read one BYTE from 1-wire data line*/
-static inline void ds1820_read_byte(uint8_t *byte, int sensor){
+void ds1820_read_byte(uint8_t *byte, int sensor){
 	
 	*byte = 0; //format byte
 	
@@ -196,7 +196,7 @@ static inline void ds1820_read_byte(uint8_t *byte, int sensor){
 
 
 /*Check crc for scratchpad data*/
-static inline uint8_t ds1820_crc_check(uint8_t *scratchpad){
+uint8_t ds1820_crc_check(uint8_t *scratchpad){
 	
 	uint8_t crc = 0;
 	
@@ -211,7 +211,7 @@ static inline uint8_t ds1820_crc_check(uint8_t *scratchpad){
 
 
 /*Convert*/
-static inline int ds1820_convert(int sensor){
+int ds1820_convert(int sensor){
 	
 	if(ds1820_reset(sensor)){
 		return 1;
@@ -226,7 +226,7 @@ static inline int ds1820_convert(int sensor){
 
 
 /*0 = not ready, 1 = ready*/
-static inline int ds1820_convert_ready(int sensor){
+int ds1820_convert_ready(int sensor){
 	return ds1820_read_bit(sensor);
 }
 
@@ -234,7 +234,7 @@ static inline int ds1820_convert_ready(int sensor){
 /**
  * Called from ds1820_refrech_all()
  */
-static inline int ds1820_get_temp(int sensor){
+int ds1820_get_temp(int sensor){
 	
 	uint8_t scratchpad[9];
 	int temp_val = 0;

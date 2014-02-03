@@ -32,20 +32,32 @@ void printData(char* packet, uint16_t pkt_len){
 }
 
 
+static inline int sensor_to_json(char* buf, int sensor){
+    int len = 0;
+    int temp = ds1820_get_cur(sensor);
+    if(temp != DS1820_TEMP_NONE){
+        len += sprintf_P(buf + len, PSTR("{'id':'%d','name':'"), sensor);
+        len += ds1820_print_tag(buf + len, sensor);
+        len += sprintf_P(buf + len, PSTR("','value':'"));
+        len += ds1820_print_temp(buf + len, temp);
+        len += sprintf_P(buf + len, PSTR("'}"));
+    }
+    return len;
+}
+
+
 static inline int reply_sensor_get_all(){
     
     char* reply = (char*)(_network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + UDP_HEADER_SIZE);
     
     int reply_len = sprintf_P(reply, PSTR("["));
+    int len = 0;
     for(int i = 0; i < 3; i++){
-        int temp = ds1820_get_cur(i);
-        if(temp == DS1820_TEMP_NONE){
-            continue;
+        len = sensor_to_json(reply + reply_len, i);
+        reply_len += len;
+        if((len > 0) && (i < 2)){
+            reply_len += sprintf_P(reply + reply_len, PSTR(","));
         }
-        
-        reply_len += sprintf_P(reply + reply_len, PSTR("{'id':'%d','name':'sensor','value':'"), i);
-        reply_len += ds1820_print_temp(reply + reply_len, temp);
-        reply_len += sprintf_P(reply + reply_len, PSTR("'}%s"), (i==2)?"":",");
     }
     reply_len += sprintf_P(reply + reply_len, PSTR("]"));
     return reply_len;
@@ -60,13 +72,12 @@ static inline int reply_sensor_get(uint8_t* packet, uint16_t pkt_len){
     return -1;
 }
 
+
 static inline int reply_sensor_set(uint8_t* packet, uint16_t pkt_len){
     return 0;
 }
 
-/**
- *
- */
+ 
 static inline int reply_sensor(uint8_t* packet, uint16_t pkt_len){
     
     if(packet[0] == 'g'){
@@ -78,19 +89,68 @@ static inline int reply_sensor(uint8_t* packet, uint16_t pkt_len){
     return -1;
 }
 
+static inline int relay_to_json(char* buf, int card, int relay, unsigned char state){
+    int len = 0;
+    len += sprintf_P(buf + len, PSTR("{'id':'%d','name':'"), card*10+relay);
+    len += relay_print_tag(buf + len, card, relay);
+    len += sprintf_P(buf + len, PSTR("','state':'%s'}"), (state>>relay & 0x01)?"true":"false");
+    return len;
+}
 
-/**
- *
- */
-static inline int reply_relay(uint8_t* packet, uint16_t pkt_len){
+
+static inline int card_to_json(char* buf, int card){
+    int len = 0;
+    unsigned char state = relay_get_state(card);
+    for(int i = 0; i < 2; i++){
+        len += relay_to_json(buf + len, card, i, state);
+        len += sprintf_P(buf + len, PSTR("%s"), (i!=1)?",":"");
+    }
+    return len;
+}
+
+
+static inline int reply_relay_get_all(){
     
     char* reply = (char*)(_network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + UDP_HEADER_SIZE);
-    int reply_len = 0;
-    reply_len = sprintf_P(reply, PSTR("[{'id':'1','name':'relay','state':'true'}]"));
-    //printData(reply, reply_len);
+    
+    int reply_len = sprintf_P(reply, PSTR("["));
+    int len = 0;
+    for(int i = 0; i < 1; i++){
+        len = card_to_json(reply + reply_len, i);
+        reply_len += len;
+        if((len > 0) && (i < 0)){
+            reply_len += sprintf_P(reply + reply_len, PSTR(","));
+        }
+    }
+    reply_len += sprintf_P(reply + reply_len, PSTR("]"));
     return reply_len;
 }
 
+static inline int reply_relay_get(uint8_t* packet, uint16_t pkt_len){
+    
+    if(packet[0] == 'a'){
+        return reply_relay_get_all();
+    }
+    return -1;
+}
+
+
+static inline int reply_relay_set(uint8_t* packet, uint16_t pkt_len){
+    return 0;
+}
+
+ 
+static inline int reply_relay(uint8_t* packet, uint16_t pkt_len){
+    
+    if(packet[0] == 'g'){
+        return reply_relay_get(packet + 2, pkt_len - 2);
+    }
+    if(packet[0] == 's'){
+        return reply_relay_set(packet + 2, pkt_len - 2);
+    }
+    return -1;
+}
+ 
 
 /**
  *
