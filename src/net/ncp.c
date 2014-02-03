@@ -91,23 +91,25 @@ int reply_sensor(uint8_t* packet, uint16_t pkt_len){
 
 int relay_to_json(char* buf, int card, int relay, unsigned char state){
     int len = 0;
-    len += sprintf_P(buf + len, PSTR("{'id':'%d','name':'"), card*10+relay);
+    len += sprintf_P(buf + len, PSTR("{'id':'%d','name':'"), (card+1)*10+relay);
     len += relay_print_tag(buf + len, card, relay);
     len += sprintf_P(buf + len, PSTR("','state':'%s'}"), (state>>relay & 0x01)?"true":"false");
     return len;
 }
 
+#define ACTIVE_RELAYS 4
 
 int card_to_json(char* buf, int card){
     int len = 0;
     unsigned char state = relay_get_state(card);
-    for(int i = 0; i < 2; i++){
+    for(int i = 0; i < ACTIVE_RELAYS; i++){
         len += relay_to_json(buf + len, card, i, state);
-        len += sprintf_P(buf + len, PSTR("%s"), (i!=1)?",":"");
+        len += sprintf_P(buf + len, PSTR("%s"), (i<(ACTIVE_RELAYS-1))?",":"");
     }
     return len;
 }
 
+#define ACTIVE_CARDS 1
 
 int reply_relay_get_all(){
     
@@ -115,10 +117,10 @@ int reply_relay_get_all(){
     
     int reply_len = sprintf_P(reply, PSTR("["));
     int len = 0;
-    for(int i = 0; i < 1; i++){
+    for(int i = 0; i < ACTIVE_CARDS; i++){
         len = card_to_json(reply + reply_len, i);
         reply_len += len;
-        if((len > 0) && (i < 0)){
+        if((len > 0) && (i < (ACTIVE_CARDS-1))){
             reply_len += sprintf_P(reply + reply_len, PSTR(","));
         }
     }
@@ -136,7 +138,14 @@ int reply_relay_get(uint8_t* packet, uint16_t pkt_len){
 
 
 int reply_relay_set(uint8_t* packet, uint16_t pkt_len){
-    return 0;
+    
+    int card = packet[0] - '0' - 1;
+    int relay = packet[1] - '0';
+    
+    relay_switch(card, relay, RELAY_OP_TOGGLE);
+    
+    char* reply = (char*)(_network_buf + ETH_HEADER_SIZE + IP_HEADER_SIZE + UDP_HEADER_SIZE);
+    return sprintf_P(reply, PSTR("OK"));
 }
 
  
