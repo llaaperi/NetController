@@ -53,7 +53,7 @@ int ds1820_get_max(int sensor){
 	return DS1820_TEMP_NONE;
 }
 
-void ds1820_reset_temp(int sensor){
+void ds1820_reset_minmax(int sensor){
 	
 	if((sensor >= 0) && (sensor <= 2)){
 		temp_min[sensor] = temp[sensor];
@@ -61,8 +61,64 @@ void ds1820_reset_temp(int sensor){
 	}
 }
 
+
+int ds1820_print_temp(char* buf, int temp){
+    
+	if(temp != DS1820_TEMP_NONE){
+		if(temp == 0){
+			return sprintf_P(buf, PSTR("0.0"));
+		}else{
+			return sprintf_P(buf, PSTR("%c%d.%d"), (temp < 0)?'-':'+', (abs(temp) / 10), (abs(temp) % 10));
+		}
+	}else{
+		return sprintf_P(buf, PSTR("none"));
+	}
+    
+	return 0;
+}
+
+int ds1820_print_tag(char* buf, int sensor){
+	
+	char c;
+	int idx = 0;
+	
+	if((sensor < 0) && (sensor > 2)){
+		return 0;
+	}
+	
+	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&_eeprom_sensor_tags[sensor]);
+    
+	while((c = (char)eeprom_read_byte((const uint8_t*)eeprom_str++)) && (idx < DS1820_TAG_SIZE)){
+		buf[idx++] = c;
+	}
+    
+	return idx;
+}
+
+int ds1820_set_tag(uint8_t len, const char* tag, int sensor){
+	
+	if((sensor < 0) && (sensor > 2)){
+		return 0;
+	}
+	
+	if(len > DS1820_TAG_SIZE){
+		len = DS1820_TAG_SIZE;
+	}
+	
+	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&_eeprom_sensor_tags[sensor]);
+	
+	eeprom_write_block(tag, eeprom_str, len);
+	
+	if(len < DS1820_TAG_SIZE){
+		eeprom_write_byte(eeprom_str + len, 0);
+	}
+	
+	return len;
+}
+
+
 /*Reset DS1820*/
-uint8_t ds1820_reset(int sensor){
+static inline uint8_t ds1820_reset(int sensor){
 	
 	DS1820_DDR |= (1<<sensor);			//output
 	DS1820_PORT &= ~(1<<sensor);		//low
@@ -81,7 +137,7 @@ uint8_t ds1820_reset(int sensor){
 
 
 /*Write one BIT to 1-wire data line*/
-void ds1820_write_bit(uint8_t bit, int sensor){
+static inline void ds1820_write_bit(uint8_t bit, int sensor){
 
 	DS1820_PORT &= ~(1<<sensor);		//low
 	DS1820_DDR |= (1<<sensor);			//output
@@ -98,7 +154,7 @@ void ds1820_write_bit(uint8_t bit, int sensor){
 
 
 /*Read one BIT from 1-wire data line*/
-uint8_t ds1820_read_bit(int sensor){
+static inline uint8_t ds1820_read_bit(int sensor){
 
 	DS1820_PORT &= ~(1<<sensor);		//low
 	DS1820_DDR |= (1<<sensor);			//output
@@ -118,7 +174,7 @@ uint8_t ds1820_read_bit(int sensor){
 
 
 /*Write one BYTE to 1-wire data line*/
-void ds1820_write_byte(uint8_t byte, int sensor){
+static inline void ds1820_write_byte(uint8_t byte, int sensor){
 
 	for(int i = 0; i < 8; i++){
 		ds1820_write_bit((byte & (1<<i)), sensor);
@@ -128,7 +184,7 @@ void ds1820_write_byte(uint8_t byte, int sensor){
 
 
 /*Read one BYTE from 1-wire data line*/
-void ds1820_read_byte(uint8_t *byte, int sensor){
+static inline void ds1820_read_byte(uint8_t *byte, int sensor){
 	
 	*byte = 0; //format byte
 	
@@ -140,7 +196,7 @@ void ds1820_read_byte(uint8_t *byte, int sensor){
 
 
 /*Check crc for scratchpad data*/
-uint8_t ds1820_crc_check(uint8_t *scratchpad){
+static inline uint8_t ds1820_crc_check(uint8_t *scratchpad){
 	
 	uint8_t crc = 0;
 	
@@ -154,8 +210,8 @@ uint8_t ds1820_crc_check(uint8_t *scratchpad){
 }
 
 
-
-int ds1820_convert(int sensor){
+/*Convert*/
+static inline int ds1820_convert(int sensor){
 	
 	if(ds1820_reset(sensor)){
 		return 1;
@@ -170,7 +226,7 @@ int ds1820_convert(int sensor){
 
 
 /*0 = not ready, 1 = ready*/
-int ds1820_convert_ready(int sensor){
+static inline int ds1820_convert_ready(int sensor){
 	return ds1820_read_bit(sensor);
 }
 
@@ -178,7 +234,7 @@ int ds1820_convert_ready(int sensor){
 /**
  * Called from ds1820_refrech_all()
  */
-int ds1820_get_temp(int sensor){
+static inline int ds1820_get_temp(int sensor){
 	
 	uint8_t scratchpad[9];
 	int temp_val = 0;
@@ -218,6 +274,10 @@ int ds1820_get_temp(int sensor){
 
 }
 
+
+/**
+ *
+ */
 void ds1820_refresh_all(){
 	
 	for(int i = 0; i < 3; i++){
@@ -255,58 +315,4 @@ void ds1820_refresh_all(){
 		
 	}
 
-}
-
-int ds1820_print_temp(char* buf, int temp){
-		
-	if(temp != DS1820_TEMP_NONE){
-		if(temp == 0){
-			return sprintf_P(buf, PSTR("0.0"));
-		}else{
-			return sprintf_P(buf, PSTR("%c%d.%d"), (temp < 0)?'-':'+', (abs(temp) / 10), (abs(temp) % 10));
-		}			
-	}else{
-		return sprintf_P(buf, PSTR("none"));
-	}
-			
-	return 0;
-}
-
-int ds1820_print_tag(char* buf, int sensor){
-	
-	char c;
-	int idx = 0;
-	
-	if((sensor < 0) && (sensor > 2)){
-		return 0;
-	}
-	
-	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&_eeprom_sensor_tags[sensor]);
-		
-	while((c = (char)eeprom_read_byte((const uint8_t*)eeprom_str++)) && (idx < DS1820_TAG_SIZE)){
-		buf[idx++] = c;
-	}
-
-	return idx;
-}
-
-int ds1820_set_tag(uint8_t len, const char* tag, int sensor){
-	
-	if((sensor < 0) && (sensor > 2)){
-		return 0;
-	}
-	
-	if(len > DS1820_TAG_SIZE){
-		len = DS1820_TAG_SIZE;
-	}
-	
-	uint8_t* eeprom_str = (uint8_t *)eeprom_read_word((void*)&_eeprom_sensor_tags[sensor]);
-	
-	eeprom_write_block(tag, eeprom_str, len);
-	
-	if(len < DS1820_TAG_SIZE){
-		eeprom_write_byte(eeprom_str + len, 0);
-	}
-	
-	return len;
 }
