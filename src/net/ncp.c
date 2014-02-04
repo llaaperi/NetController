@@ -31,7 +31,7 @@ void printData(char* packet, uint16_t pkt_len){
     lcd_write_buffer(lcd_buf_l1, lcd_buf_l2);
 }
 
-
+//{'id':'1','name':'Sensor','value':'1.0'}
 int sensor_to_json(char* buf, int sensor){
     int len = 0;
     int temp = ds1820_get_cur(sensor);
@@ -97,7 +97,7 @@ int relay_to_json(char* buf, int card, int relay, unsigned char state){
     return len;
 }
 
-#define ACTIVE_RELAYS 4
+#define ACTIVE_RELAYS 8
 
 int card_to_json(char* buf, int card){
     int len = 0;

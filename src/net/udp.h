@@ -14,6 +14,8 @@
 #define UDP_H_LEN 4
 #define UDP_H_CHC 6
 
+//Cumulative header sizes
+//(ETH = 14) + (IP = 20) + (UDP = 8) = 42 Bytes
 #define UDP_HEADER_SIZE 8
 
 #define UDP_PORT_NCP 9876
