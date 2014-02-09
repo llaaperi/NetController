@@ -36,11 +36,9 @@ int sensor_to_json(char* buf, int sensor){
     int len = 0;
     int temp = ds1820_get_cur(sensor);
     if(temp != DS1820_TEMP_NONE){
-        len += sprintf_P(buf + len, PSTR("{'id':'%d','name':'"), sensor);
-        len += ds1820_print_tag(buf + len, sensor);
-        len += sprintf_P(buf + len, PSTR("','value':'"));
+        len += sprintf_P(buf + len, PSTR("{'id':%d,'value':"), sensor);
         len += ds1820_print_temp(buf + len, temp);
-        len += sprintf_P(buf + len, PSTR("'}"));
+        len += sprintf_P(buf + len, PSTR("}"));
     }
     return len;
 }
@@ -91,9 +89,7 @@ int reply_sensor(uint8_t* packet, uint16_t pkt_len){
 
 int relay_to_json(char* buf, int card, int relay, unsigned char state){
     int len = 0;
-    len += sprintf_P(buf + len, PSTR("{'id':'%d','name':'"), (card+1)*10+relay);
-    len += relay_print_tag(buf + len, card, relay);
-    len += sprintf_P(buf + len, PSTR("','state':'%s'}"), (state>>relay & 0x01)?"true":"false");
+    len += sprintf_P(buf + len, PSTR("{'id':%d,'state':'%s'}"), (card+1)*10+relay, (state>>relay & 0x01)?"true":"false");
     return len;
 }
 
